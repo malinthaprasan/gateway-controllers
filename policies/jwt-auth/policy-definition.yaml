@@ -65,6 +65,11 @@ parameters:
         Defaults to "sub" when omitted.
       default: sub
 
+    headerName:
+      type: string
+      description: Header name to extract token from (for example "Authorization") that overrides `system.headerName`.
+      default: Authorization
+
 systemParameters:          
   type: object
   additionalProperties: false
