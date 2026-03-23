@@ -24,18 +24,16 @@ These parameters are configured per API or route by the API developer:
 
 | Parameter               | Type    | Required | Default            | Description |
 |-------------------------|---------|----------|--------------------|-------------|
-| `enabled`               | boolean | No       | `true`             | Enables or disables subscription validation for the route. When `false`, the policy acts as a no-op and always lets the request pass. |
 | `subscriptionKeyHeader` | string  | No       | `Subscription-Key` | Name of the HTTP request header that carries the subscription token. This is the primary source and is checked before cookie fallback. |
 | `subscriptionKeyCookie` | string  | No       | `""`               | Optional cookie name that can carry the subscription token. When non-empty, the cookie value is checked only if the header does not contain a token. |
 
 At runtime the policy behaves as follows:
 
-1. If `enabled` is `false`, the policy immediately allows the request without further checks.
-2. If `enabled` is `true`, it first attempts to read the subscription token from `subscriptionKeyHeader`.
-3. If no header token is present and `subscriptionKeyCookie` is non-empty, it attempts to read the token from the named cookie.
-4. If a token is found, it is validated against the subscription store for the target API.
-5. If a matching active subscription is not found, the request is rejected.
-6. When the matched subscription plan includes throttle limits, the policy enforces per-subscription rate limits and can block requests when the quota is exceeded.
+1. It first attempts to read the subscription token from `subscriptionKeyHeader`.
+2. If no header token is present and `subscriptionKeyCookie` is non-empty, it attempts to read the token from the named cookie.
+3. If a token is found, it is validated against the subscription store for the target API.
+4. If a matching active subscription is not found, the request is rejected.
+5. When the matched subscription plan includes throttle limits, the policy enforces per-subscription rate limits and can block requests when the quota is exceeded.
 
 ### System Parameters
 
@@ -97,7 +95,6 @@ spec:
     - name: subscription-validation
       version: v0
       params:
-        enabled: true
   operations:
     - method: GET
       path: /{country_code}/{city}
