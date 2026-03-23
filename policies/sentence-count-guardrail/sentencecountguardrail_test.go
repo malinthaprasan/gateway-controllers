@@ -265,6 +265,63 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	})
 }
 
+func TestGetPolicy_EmptyFlowObject_IsIgnored(t *testing.T) {
+	t.Run("request configured with empty response object", func(t *testing.T) {
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
+			"request":  map[string]interface{}{"min": 1, "max": 10},
+			"response": map[string]interface{}{},
+		})
+		if err != nil {
+			t.Fatalf("expected empty response object to be ignored, got %v", err)
+		}
+
+		p, ok := pRaw.(*SentenceCountGuardrailPolicy)
+		if !ok {
+			t.Fatalf("expected *SentenceCountGuardrailPolicy, got %T", pRaw)
+		}
+		if !p.hasRequestParams {
+			t.Fatalf("expected request params to be present")
+		}
+		if p.hasResponseParams {
+			t.Fatalf("expected empty response object to be ignored")
+		}
+	})
+
+	t.Run("response configured with empty request object", func(t *testing.T) {
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
+			"request":  map[string]interface{}{},
+			"response": map[string]interface{}{"enabled": true, "min": 1, "max": 10},
+		})
+		if err != nil {
+			t.Fatalf("expected empty request object to be ignored, got %v", err)
+		}
+
+		p, ok := pRaw.(*SentenceCountGuardrailPolicy)
+		if !ok {
+			t.Fatalf("expected *SentenceCountGuardrailPolicy, got %T", pRaw)
+		}
+		if p.hasRequestParams {
+			t.Fatalf("expected empty request object to be ignored")
+		}
+		if !p.hasResponseParams {
+			t.Fatalf("expected response params to be present")
+		}
+	})
+
+	t.Run("both empty objects still fail", func(t *testing.T) {
+		_, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
+			"request":  map[string]interface{}{},
+			"response": map[string]interface{}{},
+		})
+		if err == nil {
+			t.Fatalf("expected error when both flow objects are empty")
+		}
+		if !strings.Contains(err.Error(), "at least one of 'request' or 'response' parameters must be provided") {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 func TestGetPolicy(t *testing.T) {
 	tests := []struct {
 		name        string

@@ -112,6 +112,9 @@ func getFlowParams(params map[string]interface{}, flow string) (map[string]inter
 	if !ok {
 		return nil, false, fmt.Errorf("'%s' must be an object", flow)
 	}
+	if len(flowParams) == 0 {
+		return nil, false, nil
+	}
 	return flowParams, true, nil
 }
 
