@@ -2,6 +2,7 @@ package subscriptionvalidation
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
@@ -27,7 +28,6 @@ func newPolicy(cfg PolicyConfig, store *policyenginev1.SubscriptionStore) *Subsc
 
 func defaultCfg() PolicyConfig {
 	return PolicyConfig{
-		Enabled:               true,
 		SubscriptionKeyHeader: defaultSubscriptionKeyHeader,
 		SubscriptionKeyCookie: defaultSubscriptionKeyCookie,
 	}
@@ -85,13 +85,73 @@ func assertImmediate(t *testing.T, action policy.RequestAction, wantStatus int, 
 	}
 }
 
+func assertRateLimitHeaders(t *testing.T, resp policy.ImmediateResponse, wantLimit, wantRemaining int) {
+	t.Helper()
+	if resp.Headers == nil {
+		t.Fatalf("expected headers to be set")
+	}
+	assertIntHeader := func(key string, want int) {
+		gotRaw, ok := resp.Headers[key]
+		if !ok {
+			t.Fatalf("missing rate-limit header %q", key)
+		}
+		got, err := strconv.Atoi(gotRaw)
+		if err != nil {
+			t.Fatalf("rate-limit header %q value %q is not an int: %v", key, gotRaw, err)
+		}
+		if got != want {
+			t.Fatalf("rate-limit header %q expected %d, got %d", key, want, got)
+		}
+	}
+
+	if ct, ok := resp.Headers["Content-Type"]; !ok || ct != "application/json" {
+		t.Fatalf("expected Content-Type=application/json, got %q (ok=%v)", ct, ok)
+	}
+
+	assertIntHeader("X-RateLimit-Limit", wantLimit)
+	assertIntHeader("X-RateLimit-Remaining", wantRemaining)
+	assertIntHeader("RateLimit-Limit", wantLimit)
+	assertIntHeader("RateLimit-Remaining", wantRemaining)
+
+	// Reset-related headers can be time-sensitive; assert they are present and parse.
+	parseInt64Header := func(key string) int64 {
+		gotRaw, ok := resp.Headers[key]
+		if !ok {
+			t.Fatalf("missing rate-limit header %q", key)
+		}
+		got, err := strconv.ParseInt(gotRaw, 10, 64)
+		if err != nil {
+			t.Fatalf("rate-limit header %q value %q is not an int64: %v", key, gotRaw, err)
+		}
+		return got
+	}
+
+	xResetUnix := parseInt64Header("X-RateLimit-Reset")
+	if xResetUnix < 0 {
+		t.Fatalf("expected X-RateLimit-Reset >= 0, got %d", xResetUnix)
+	}
+	_ = parseInt64Header("X-RateLimit-Full-Quota-Reset")
+
+	rResetSeconds := parseInt64Header("RateLimit-Reset")
+	if rResetSeconds < 0 {
+		t.Fatalf("expected RateLimit-Reset >= 0, got %d", rResetSeconds)
+	}
+	_ = parseInt64Header("RateLimit-Full-Quota-Reset")
+
+	if policyValue, ok := resp.Headers["RateLimit-Policy"]; !ok || policyValue == "" {
+		t.Fatalf("missing/empty rate-limit header %q", "RateLimit-Policy")
+	}
+
+	retryAfter := parseInt64Header("Retry-After")
+	if retryAfter < 1 {
+		t.Fatalf("expected Retry-After >= 1, got %d", retryAfter)
+	}
+}
+
 // --- mergeConfig tests -------------------------------------------------------
 
 func TestMergeConfig_Defaults(t *testing.T) {
 	cfg := mergeConfig(defaultCfg(), nil)
-	if !cfg.Enabled {
-		t.Fatal("expected Enabled=true by default")
-	}
 	if cfg.SubscriptionKeyHeader != defaultSubscriptionKeyHeader {
 		t.Fatalf("expected default header=%q, got %q", defaultSubscriptionKeyHeader, cfg.SubscriptionKeyHeader)
 	}
@@ -99,29 +159,15 @@ func TestMergeConfig_Defaults(t *testing.T) {
 
 func TestMergeConfig_Overrides(t *testing.T) {
 	cfg := mergeConfig(defaultCfg(), map[string]interface{}{
-		"enabled":               false,
 		"subscriptionKeyHeader": "X-My-Key",
 		"subscriptionKeyCookie": "sub-key",
 	})
-	if cfg.Enabled {
-		t.Fatal("expected Enabled=false after override")
-	}
 	if cfg.SubscriptionKeyHeader != "X-My-Key" {
 		t.Fatalf("expected header=X-My-Key, got %q", cfg.SubscriptionKeyHeader)
 	}
 	if cfg.SubscriptionKeyCookie != "sub-key" {
 		t.Fatalf("expected cookie=sub-key, got %q", cfg.SubscriptionKeyCookie)
 	}
-}
-
-// --- disabled ----------------------------------------------------------------
-
-func TestOnRequest_SkipsWhenDisabled(t *testing.T) {
-	cfg := defaultCfg()
-	cfg.Enabled = false
-	p := newPolicy(cfg, nil)
-	ctx := ctxWithToken("api-1", "tok-1", "")
-	assertNil(t, p.OnRequest(ctx, nil))
 }
 
 // --- token path (primary) ----------------------------------------------------
@@ -331,7 +377,22 @@ func TestOnRequest_RateLimitEnforced(t *testing.T) {
 	}
 
 	ctx := ctxWithToken("api-1", "tok-1", "")
-	assertImmediate(t, p.OnRequest(ctx, nil), 429, "rate_limit_exceeded")
+	action := p.OnRequest(ctx, nil)
+	resp, ok := action.(policy.ImmediateResponse)
+	if !ok {
+		t.Fatalf("expected ImmediateResponse, got %T", action)
+	}
+	if resp.StatusCode != 429 {
+		t.Fatalf("expected status 429, got %d", resp.StatusCode)
+	}
+	var body map[string]interface{}
+	if err := json.Unmarshal(resp.Body, &body); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+	if body["error"] != "rate_limit_exceeded" {
+		t.Fatalf("expected error=%q, got %q", "rate_limit_exceeded", body["error"])
+	}
+	assertRateLimitHeaders(t, resp, 3, 0)
 }
 
 func TestOnRequest_RateLimitNotEnforcedWhenStopOnQuotaFalse(t *testing.T) {
