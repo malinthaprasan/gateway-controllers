@@ -55,13 +55,24 @@ var ins = &RequestRewritePolicy{}
 // RequestRewritePolicy implements request rewriting (path, query, method)
 type RequestRewritePolicy struct{}
 
-// GetPolicy returns the policy instance
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// The returned concrete type also satisfies policyv1alpha2 phase interfaces
+// (StreamingResponsePolicy, RequestPolicy, ResponsePolicy), so v1alpha2 kernels
+// can discover those capabilities via type assertions even when using this factory.
 func GetPolicy(metadata policy.PolicyMetadata, params map[string]interface{}) (policy.Policy, error) {
 	slog.Debug("[Request Rewrite]: GetPolicy called",
 		"route", metadata.RouteName,
 		"api", metadata.APIName,
 		"version", metadata.APIVersion,
 	)
+	return ins, nil
+}
+
+// GetPolicyV2 is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
+func GetPolicyV2(
+	metadata policyv1alpha2.PolicyMetadata,
+	params map[string]interface{},
+) (policyv1alpha2.Policy, error) {
 	return ins, nil
 }
 

@@ -48,7 +48,8 @@ type TokenBasedRateLimitPolicy struct {
 	sf                singleflight.Group // prevents duplicate delegate creation
 }
 
-// GetPolicy creates and initializes the token-based rate limit policy.
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// TODO: add GetPolicyV2 once this module is upgraded to sdk v0.4.5+ (ProcessingMode type alias required).
 func GetPolicy(
 	metadata policy.PolicyMetadata,
 	params map[string]interface{},

@@ -112,7 +112,8 @@ func runRateLimitCleaner() {
 	}
 }
 
-// GetPolicy returns a per-route instance of SubscriptionValidationPolicy.
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// TODO: add GetPolicyV2 once this module is upgraded to sdk v0.4.5+ (ProcessingMode type alias required).
 func GetPolicy(
 	metadata policy.PolicyMetadata,
 	params map[string]interface{},

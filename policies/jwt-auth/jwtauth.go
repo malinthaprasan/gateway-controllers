@@ -115,11 +115,23 @@ var ins = &JwtAuthPolicy{
 	},
 }
 
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// The returned concrete type also satisfies policyv1alpha2 phase interfaces
+// (StreamingResponsePolicy, RequestPolicy, ResponsePolicy), so v1alpha2 kernels
+// can discover those capabilities via type assertions even when using this factory.
 func GetPolicy(
 	metadata policy.PolicyMetadata,
 	params map[string]interface{},
 ) (policy.Policy, error) {
 	slog.Debug("JWT Auth Policy: GetPolicy called")
+	return ins, nil
+}
+
+// GetPolicyV2 is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
+func GetPolicyV2(
+	metadata policyv1alpha2.PolicyMetadata,
+	params map[string]interface{},
+) (policyv1alpha2.Policy, error) {
 	return ins, nil
 }
 
@@ -1629,6 +1641,8 @@ func parsePublicKeyFromString(pemData string) (*rsa.PublicKey, error) {
 
 // OnRequestHeaders performs JWT validation in the request header phase.
 func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+	slog.Debug("JWT Auth Policy: OnRequestHeaders started")
+
 	headerName := getStringParam(params, "headerName", "Authorization")
 	authHeaderScheme := getStringParam(params, "authHeaderScheme", "Bearer")
 	onFailureStatusCode := getIntParam(params, "onFailureStatusCode", 401)
@@ -1642,27 +1656,72 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 	jwksFetchRetryIntervalStr := getStringParam(params, "jwksFetchRetryInterval", "2s")
 	validateIssuer := getBoolParam(params, "validateIssuer", true)
 
+	slog.Debug("JWT Auth Policy: Configuration loaded",
+		"headerName", headerName,
+		"authHeaderScheme", authHeaderScheme,
+		"onFailureStatusCode", onFailureStatusCode,
+		"errorMessageFormat", errorMessageFormat,
+		"errorMessage", errorMessage,
+		"leeway", leewayStr,
+		"allowedAlgorithms", allowedAlgorithms,
+		"jwksCacheTtl", jwksCacheTtlStr,
+		"jwksFetchTimeout", jwksFetchTimeoutStr,
+		"jwksFetchRetryCount", jwksFetchRetryCount,
+		"jwksFetchRetryInterval", jwksFetchRetryIntervalStr,
+		"validateIssuer", validateIssuer,
+	)
+
 	leeway, err := time.ParseDuration(leewayStr)
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Failed to parse leeway duration, using default",
+			"leewayStr", leewayStr,
+			"error", err,
+			"defaultLeeway", "30s",
+		)
 		leeway = 30 * time.Second
 	}
 	jwksCacheTtl, err := time.ParseDuration(jwksCacheTtlStr)
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Failed to parse jwksCacheTtl duration, using default",
+			"jwksCacheTtlStr", jwksCacheTtlStr,
+			"error", err,
+			"defaultCacheTtl", "5m",
+		)
 		jwksCacheTtl = 5 * time.Minute
 	}
 	jwksFetchTimeout, err := time.ParseDuration(jwksFetchTimeoutStr)
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Failed to parse jwksFetchTimeout duration, using default",
+			"jwksFetchTimeoutStr", jwksFetchTimeoutStr,
+			"error", err,
+			"defaultTimeout", "5s",
+		)
 		jwksFetchTimeout = 5 * time.Second
 	}
 	jwksFetchRetryInterval, err := time.ParseDuration(jwksFetchRetryIntervalStr)
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Failed to parse jwksFetchRetryInterval duration, using default",
+			"jwksFetchRetryIntervalStr", jwksFetchRetryIntervalStr,
+			"error", err,
+			"defaultInterval", "2s",
+		)
 		jwksFetchRetryInterval = 2 * time.Second
 	}
 
+	slog.Debug("JWT Auth Policy: Parsed duration values",
+		"leeway", leeway,
+		"jwksCacheTtl", jwksCacheTtl,
+		"jwksFetchTimeout", jwksFetchTimeout,
+		"jwksFetchRetryInterval", jwksFetchRetryInterval,
+	)
+
 	keyManagersRaw, ok := params["keyManagers"]
 	if !ok {
+		slog.Debug("JWT Auth Policy: Key managers not configured in params")
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "key managers not configured")
 	}
+
+	slog.Debug("JWT Auth Policy: Starting to parse key managers configuration")
 
 	keyManagers := make(map[string]*KeyManager)
 	keyManagersList, ok := keyManagersRaw.([]interface{})
@@ -1672,8 +1731,15 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 				name := getString(kmMap["name"])
 				issuer := getString(kmMap["issuer"])
 				if name == "" {
+					slog.Debug("JWT Auth Policy: Skipping key manager with empty name")
 					continue
 				}
+
+				slog.Debug("JWT Auth Policy: Processing key manager",
+					"name", name,
+					"issuer", issuer,
+				)
+
 				keyManager := &KeyManager{Name: name, Issuer: issuer}
 				if jwksRaw, ok := kmMap["jwks"].(map[string]interface{}); ok {
 					jwksConfig := &JWKSConfig{}
@@ -1682,14 +1748,32 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 						certPath := getString(remoteRaw["certificatePath"])
 						skipTlsVerify := getBool(remoteRaw["skipTlsVerify"])
 						if uri != "" {
+							slog.Debug("JWT Auth Policy: Configuring remote JWKS",
+								"keyManager", name,
+								"uri", uri,
+								"certificatePath", certPath,
+								"skipTlsVerify", skipTlsVerify,
+							)
 							remoteJWKS := &RemoteJWKS{URI: uri, CertificatePath: certPath, SkipTlsVerify: skipTlsVerify}
 							if certPath != "" {
 								tlsConfig, err := loadTLSConfig(certPath)
 								if err != nil {
+									slog.Debug("JWT Auth Policy: Failed to load TLS config for remote JWKS",
+										"keyManager", name,
+										"certificatePath", certPath,
+										"error", err,
+									)
 									continue
 								}
+								slog.Debug("JWT Auth Policy: Successfully loaded TLS config for remote JWKS",
+									"keyManager", name,
+									"certificatePath", certPath,
+								)
 								remoteJWKS.tlsConfig = tlsConfig
 							} else if skipTlsVerify {
+								slog.Debug("JWT Auth Policy: Configuring TLS to skip verification",
+									"keyManager", name,
+								)
 								remoteJWKS.tlsConfig = &tls.Config{InsecureSkipVerify: true, MinVersion: tls.VersionTLS12}
 							}
 							jwksConfig.Remote = remoteJWKS
@@ -1698,17 +1782,39 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 					if localRaw, ok := jwksRaw["local"].(map[string]interface{}); ok {
 						inline := getString(localRaw["inline"])
 						certPath := getString(localRaw["certificatePath"])
+
+						slog.Debug("JWT Auth Policy: Processing local certificate configuration",
+							"keyManager", name,
+							"hasInline", inline != "",
+							"certificatePath", certPath,
+						)
+
 						if inline != "" || certPath != "" {
 							localCert := &LocalCert{Inline: inline, CertificatePath: certPath}
 							var publicKey *rsa.PublicKey
+							var certErr error
 							if inline != "" {
-								publicKey, err = parsePublicKeyFromString(inline)
+								slog.Debug("JWT Auth Policy: Parsing inline certificate",
+									"keyManager", name,
+								)
+								publicKey, certErr = parsePublicKeyFromString(inline)
 							} else if certPath != "" {
-								publicKey, err = loadPublicKeyFromCertificate(certPath)
+								slog.Debug("JWT Auth Policy: Loading certificate from file",
+									"keyManager", name,
+									"certificatePath", certPath,
+								)
+								publicKey, certErr = loadPublicKeyFromCertificate(certPath)
 							}
-							if err != nil {
+							if certErr != nil {
+								slog.Debug("JWT Auth Policy: Failed to load local certificate",
+									"keyManager", name,
+									"error", certErr,
+								)
 								continue
 							}
+							slog.Debug("JWT Auth Policy: Successfully loaded local certificate",
+								"keyManager", name,
+							)
 							localCert.PublicKey = publicKey
 							jwksConfig.Local = localCert
 						}
@@ -1716,6 +1822,15 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 					if jwksConfig.Remote != nil || jwksConfig.Local != nil {
 						keyManager.JWKS = jwksConfig
 						keyManagers[name] = keyManager
+						slog.Debug("JWT Auth Policy: Key manager added successfully",
+							"keyManager", name,
+							"hasRemote", jwksConfig.Remote != nil,
+							"hasLocal", jwksConfig.Local != nil,
+						)
+					} else {
+						slog.Debug("JWT Auth Policy: Key manager skipped - no remote or local JWKS configured",
+							"keyManager", name,
+						)
 					}
 				}
 			}
@@ -1723,8 +1838,13 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 	}
 
 	if len(keyManagers) == 0 {
+		slog.Debug("JWT Auth Policy: No key managers configured after parsing")
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "no key managers configured")
 	}
+
+	slog.Debug("JWT Auth Policy: Key managers configured",
+		"count", len(keyManagers),
+	)
 
 	userIssuers := getStringArrayParam(params, "issuers", []string{})
 	userAudiences := getStringArrayParam(params, "audiences", []string{})
@@ -1733,33 +1853,82 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 	userClaimMappings := getStringMapParam(params, "claimMappings", map[string]string{})
 	userIdClaim := getStringParam(params, "userIdClaim", "sub")
 	userAuthHeaderPrefix := getStringParam(params, "authHeaderPrefix", "")
+
+	slog.Debug("JWT Auth Policy: User configuration loaded",
+		"issuers", userIssuers,
+		"audiences", userAudiences,
+		"requiredScopes", userRequiredScopes,
+		"requiredClaimsCount", len(userRequiredClaims),
+		"claimMappingsCount", len(userClaimMappings),
+		"userIdClaim", userIdClaim,
+		"authHeaderPrefix", userAuthHeaderPrefix,
+	)
+
 	if userAuthHeaderPrefix != "" {
+		slog.Debug("JWT Auth Policy: Overriding auth header scheme with user prefix",
+			"originalScheme", authHeaderScheme,
+			"newScheme", userAuthHeaderPrefix,
+		)
 		authHeaderScheme = userAuthHeaderPrefix
 	}
 
 	authHeaders := ctx.Headers.Get(strings.ToLower(headerName))
 	if len(authHeaders) == 0 {
+		slog.Debug("JWT Auth Policy: Missing authorization header",
+			"headerName", headerName,
+		)
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "missing authorization header")
 	}
 
-	token := extractToken(authHeaders[0], authHeaderScheme)
+	authHeader := authHeaders[0]
+	slog.Debug("JWT Auth Policy: Authorization header found",
+		"headerName", headerName,
+		"headerValueLength", len(authHeader),
+	)
+
+	token := extractToken(authHeader, authHeaderScheme)
 	if token == "" {
+		slog.Debug("JWT Auth Policy: Failed to extract token from authorization header",
+			"authHeaderScheme", authHeaderScheme,
+		)
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "invalid authorization header format")
 	}
 
+	slog.Debug("JWT Auth Policy: Token extracted successfully",
+		"tokenLength", len(token),
+	)
+
 	unverifiedToken, _, err := jwt.NewParser().ParseUnverified(token, jwt.MapClaims{})
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Failed to parse token",
+			"error", err,
+		)
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "invalid token format")
 	}
+
+	slog.Debug("JWT Auth Policy: Token parsed successfully",
+		"algorithm", unverifiedToken.Header["alg"],
+		"keyId", unverifiedToken.Header["kid"],
+		"type", unverifiedToken.Header["typ"],
+	)
 
 	claims, err := p.validateTokenWithSignature(token, unverifiedToken, keyManagers, userIssuers, validateIssuer,
 		allowedAlgorithms, leeway, jwksCacheTtl, jwksFetchTimeout, jwksFetchRetryCount, jwksFetchRetryInterval)
 	if err != nil {
+		slog.Debug("JWT Auth Policy: Token validation failed",
+			"error", err,
+		)
 		return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, fmt.Sprintf("token validation failed: %v", err))
 	}
 
+	slog.Debug("JWT Auth Policy: Token signature validated successfully")
+
 	if len(userAudiences) > 0 {
 		aud := parseAudience(claims["aud"])
+		slog.Debug("JWT Auth Policy: Validating audience",
+			"tokenAudiences", aud,
+			"requiredAudiences", userAudiences,
+		)
 		found := false
 		for _, userAud := range userAudiences {
 			for _, tokenAud := range aud {
@@ -1773,12 +1942,20 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 			}
 		}
 		if !found {
+			slog.Debug("JWT Auth Policy: No valid audience found in token",
+				"tokenAudiences", aud,
+			)
 			return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, "no valid audience found in token")
 		}
+		slog.Debug("JWT Auth Policy: Audience validation passed")
 	}
 
 	if len(userRequiredScopes) > 0 {
 		scopes := parseScopes(claims["scope"], claims["scp"])
+		slog.Debug("JWT Auth Policy: Validating required scopes",
+			"tokenScopes", scopes,
+			"requiredScopes", userRequiredScopes,
+		)
 		for _, requiredScope := range userRequiredScopes {
 			found := false
 			for _, tokenScope := range scopes {
@@ -1788,16 +1965,39 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 				}
 			}
 			if !found {
+				slog.Debug("JWT Auth Policy: Required scope not found",
+					"missingScope", requiredScope,
+					"tokenScopes", scopes,
+				)
 				return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, fmt.Sprintf("required scope '%s' not found", requiredScope))
 			}
 		}
+		slog.Debug("JWT Auth Policy: Scope validation passed")
 	}
 
+	if len(userRequiredClaims) > 0 {
+		slog.Debug("JWT Auth Policy: Validating required claims",
+			"requiredClaimsCount", len(userRequiredClaims),
+		)
+	}
 	for claimName, expectedValue := range userRequiredClaims {
-		if getString(claims[claimName]) != expectedValue {
+		claimValue := getString(claims[claimName])
+		slog.Debug("JWT Auth Policy: Checking required claim",
+			"claimName", claimName,
+			"expectedValue", expectedValue,
+			"actualValue", claimValue,
+		)
+		if claimValue != expectedValue {
+			slog.Debug("JWT Auth Policy: Required claim validation failed",
+				"claimName", claimName,
+				"expectedValue", expectedValue,
+				"actualValue", claimValue,
+			)
 			return p.handleAuthFailureHeaders(ctx.SharedContext, onFailureStatusCode, errorMessageFormat, errorMessage, fmt.Sprintf("claim '%s' validation failed", claimName))
 		}
 	}
+
+	slog.Debug("JWT Auth Policy: All validations passed, authentication successful")
 
 	return p.handleAuthSuccessHeaders(ctx.SharedContext, claims, userClaimMappings, userIdClaim)
 }

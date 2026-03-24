@@ -52,9 +52,10 @@ var (
 	instanceErr  error
 )
 
-// GetPolicy returns the singleton LLMCostPolicy instance. The pricing file is
-// loaded from disk exactly once for the lifetime of the process; every API and
-// route that attaches this policy receives the same shared instance.
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// The returned concrete type also satisfies policyv1alpha2 phase interfaces
+// (StreamingResponsePolicy, RequestPolicy, ResponsePolicy), so v1alpha2 kernels
+// can discover those capabilities via type assertions even when using this factory.
 func GetPolicy(
 	_ policy.PolicyMetadata,
 	params map[string]interface{},
@@ -74,6 +75,20 @@ func GetPolicy(
 		instance = &LLMCostPolicy{pricingMap: pm}
 	})
 	return instance, instanceErr
+}
+
+// GetPolicyV2 is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
+func GetPolicyV2(
+	metadata policyv1alpha2.PolicyMetadata,
+	params map[string]interface{},
+) (policyv1alpha2.Policy, error) {
+	return GetPolicy(policy.PolicyMetadata{
+		RouteName:  metadata.RouteName,
+		APIId:      metadata.APIId,
+		APIName:    metadata.APIName,
+		APIVersion: metadata.APIVersion,
+		AttachedTo: policy.Level(metadata.AttachedTo),
+	}, params)
 }
 
 // Mode declares the SDK processing requirements:

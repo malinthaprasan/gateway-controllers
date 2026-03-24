@@ -60,7 +60,8 @@ type LLMCostRateLimitPolicy struct {
 	delegates sync.Map // map[string]*delegateEntry (providerName -> delegate entry)
 }
 
-// GetPolicy creates and initializes the LLM cost-based rate limit policy.
+// GetPolicy is the v1alpha factory entry point (loaded by v1alpha kernels).
+// TODO: add GetPolicyV2 once this module is upgraded to sdk v0.4.5+ (ProcessingMode type alias required).
 func GetPolicy(
 	metadata policy.PolicyMetadata,
 	params map[string]interface{},
