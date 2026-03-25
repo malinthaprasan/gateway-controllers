@@ -27,6 +27,7 @@ import (
 
 	"github.com/google/uuid"
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
 	utils "github.com/wso2/api-platform/sdk/utils"
 	embeddingproviders "github.com/wso2/api-platform/sdk/utils/embeddingproviders"
 	vectordbproviders "github.com/wso2/api-platform/sdk/utils/vectordbproviders"
@@ -54,9 +55,9 @@ type SemanticCachePolicy struct {
 // (StreamingResponsePolicy, RequestPolicy, ResponsePolicy), so v1alpha2 kernels
 // can discover those capabilities via type assertions even when using this factory.
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &SemanticCachePolicy{}
 
 	// Parse and validate parameters
@@ -93,12 +94,12 @@ func GetPolicyV2(
 	metadata policyv1alpha2.PolicyMetadata,
 	params map[string]interface{},
 ) (policyv1alpha2.Policy, error) {
-	return GetPolicy(policyv1alpha2.PolicyMetadata{
+	return GetPolicy(policy.PolicyMetadata{
 		RouteName:  metadata.RouteName,
 		APIId:      metadata.APIId,
 		APIName:    metadata.APIName,
 		APIVersion: metadata.APIVersion,
-		AttachedTo: policyv1alpha2.Level(metadata.AttachedTo),
+		AttachedTo: policy.Level(metadata.AttachedTo),
 	}, params)
 }
 
