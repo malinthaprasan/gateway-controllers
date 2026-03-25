@@ -1,7 +1,7 @@
 {
   "name": "mcp-authz",
-  "displayName": "MCP Authz",
-  "version": "0.2",
+  "displayName": "MCP Authorization",
+  "version": "0.3",
   "provider": "WSO2",
   "categories": [
     "MCP",
