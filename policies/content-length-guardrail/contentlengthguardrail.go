@@ -742,6 +742,10 @@ func (p *ContentLengthGuardrailPolicy) buildSSEErrorEvent(reason string, showAss
 // buildErrorResponseV2 builds a policyv1alpha2 error response for both request and response phases.
 func (p *ContentLengthGuardrailPolicy) buildErrorResponseV2(reason string, validationError error, isResponse bool, showAssessment bool, min, max int) interface{} {
 	assessment := p.buildAssessmentObject(reason, validationError, isResponse, showAssessment, min, max)
+	analyticsMetadata := map[string]interface{}{
+		"isGuardrailHit": true,
+		"guardrailName":  "content-length-guardrail",
+	}
 
 	responseBody := map[string]interface{}{
 		"type":    "CONTENT_LENGTH_GUARDRAIL",
@@ -756,8 +760,9 @@ func (p *ContentLengthGuardrailPolicy) buildErrorResponseV2(reason string, valid
 	if isResponse {
 		statusCode := GuardrailErrorCode
 		return policyv1alpha2.DownstreamResponseModifications{
-			StatusCode: &statusCode,
-			Body:       bodyBytes,
+			StatusCode:        &statusCode,
+			Body:              bodyBytes,
+			AnalyticsMetadata: analyticsMetadata,
 			DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
 				HeadersToSet: map[string]string{"Content-Type": "application/json"},
 			},
@@ -765,8 +770,9 @@ func (p *ContentLengthGuardrailPolicy) buildErrorResponseV2(reason string, valid
 	}
 
 	return policyv1alpha2.ImmediateResponse{
-		StatusCode: GuardrailErrorCode,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       bodyBytes,
+		StatusCode:        GuardrailErrorCode,
+		AnalyticsMetadata: analyticsMetadata,
+		Headers:           map[string]string{"Content-Type": "application/json"},
+		Body:              bodyBytes,
 	}
 }

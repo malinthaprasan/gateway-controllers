@@ -7,4 +7,4 @@ require (
 	github.com/wso2/api-platform/sdk v0.4.6
 )
 
-require github.com/wso2/api-platform/sdk/core v0.1.0 // indirect
+require github.com/wso2/api-platform/sdk/core v0.1.2 // indirect

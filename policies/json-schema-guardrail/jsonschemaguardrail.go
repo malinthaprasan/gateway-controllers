@@ -447,6 +447,10 @@ func (p *JSONSchemaGuardrailPolicy) validatePayloadV2(payload []byte, params JSO
 // buildErrorResponseV2 builds a policyv1alpha2 error response for both request and response phases.
 func (p *JSONSchemaGuardrailPolicy) buildErrorResponseV2(reason string, validationError error, isResponse bool, showAssessment bool, errors []gojsonschema.ResultError) interface{} {
 	assessment := p.buildAssessmentObject(reason, validationError, isResponse, showAssessment, errors)
+	analyticsMetadata := map[string]interface{}{
+		"isGuardrailHit": true,
+		"guardrailName":  "json-schema-guardrail",
+	}
 
 	responseBody := map[string]interface{}{
 		"type":    "JSON_SCHEMA_GUARDRAIL",
@@ -461,8 +465,9 @@ func (p *JSONSchemaGuardrailPolicy) buildErrorResponseV2(reason string, validati
 	if isResponse {
 		statusCode := GuardrailErrorCode
 		return policyv1alpha2.DownstreamResponseModifications{
-			StatusCode: &statusCode,
-			Body:       bodyBytes,
+			StatusCode:        &statusCode,
+			Body:              bodyBytes,
+			AnalyticsMetadata: analyticsMetadata,
 			DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
 				HeadersToSet: map[string]string{"Content-Type": "application/json"},
 			},
@@ -470,8 +475,9 @@ func (p *JSONSchemaGuardrailPolicy) buildErrorResponseV2(reason string, validati
 	}
 
 	return policyv1alpha2.ImmediateResponse{
-		StatusCode: GuardrailErrorCode,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       bodyBytes,
+		StatusCode:        GuardrailErrorCode,
+		AnalyticsMetadata: analyticsMetadata,
+		Headers:           map[string]string{"Content-Type": "application/json"},
+		Body:              bodyBytes,
 	}
 }

@@ -599,6 +599,10 @@ func (p *RegexGuardrailPolicy) buildSSEErrorEvent(rp RegexGuardrailPolicyParams)
 // buildErrorResponseV2 builds a policyv1alpha2 error response for both request and response phases.
 func (p *RegexGuardrailPolicy) buildErrorResponseV2(reason string, validationError error, isResponse bool, showAssessment bool) interface{} {
 	assessment := p.buildAssessmentObject(reason, validationError, isResponse, showAssessment)
+	analyticsMetadata := map[string]interface{}{
+		"isGuardrailHit": true,
+		"guardrailName":  "regex-guardrail",
+	}
 
 	responseBody := map[string]interface{}{
 		"type":    "REGEX_GUARDRAIL",
@@ -613,8 +617,9 @@ func (p *RegexGuardrailPolicy) buildErrorResponseV2(reason string, validationErr
 	if isResponse {
 		statusCode := GuardrailErrorCode
 		return policyv1alpha2.DownstreamResponseModifications{
-			StatusCode: &statusCode,
-			Body:       bodyBytes,
+			StatusCode:        &statusCode,
+			Body:              bodyBytes,
+			AnalyticsMetadata: analyticsMetadata,
 			DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
 				HeadersToSet: map[string]string{"Content-Type": "application/json"},
 			},
@@ -622,8 +627,9 @@ func (p *RegexGuardrailPolicy) buildErrorResponseV2(reason string, validationErr
 	}
 
 	return policyv1alpha2.ImmediateResponse{
-		StatusCode: GuardrailErrorCode,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       bodyBytes,
+		StatusCode:        GuardrailErrorCode,
+		AnalyticsMetadata: analyticsMetadata,
+		Headers:           map[string]string{"Content-Type": "application/json"},
+		Body:              bodyBytes,
 	}
 }
