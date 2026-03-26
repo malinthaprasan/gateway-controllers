@@ -42,7 +42,7 @@ const (
 	sseDone                     = "[DONE]"
 	metaKeyResponseRunningBytes = "contentlengthguardrail:response_bytes"
 	metaKeyAccJsonBody          = "contentlengthguardrail:json_body"
-	DefaultStreamingJsonPath    = "$.choices[*].delta.content"
+	DefaultStreamingJsonPath    = "$.choices[0].delta.content"
 )
 
 var textCleanRegexCompiled = regexp.MustCompile(TextCleanRegex)

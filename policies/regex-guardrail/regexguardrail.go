@@ -40,7 +40,7 @@ const (
 	sseDone                           = "[DONE]"
 	metaKeyAccumulatedResponseContent = "regexguardrail:accumulated_response_content"
 	metaKeyAccJsonBody                = "regexguardrail:json_body"
-	DefaultStreamingJsonPath          = "$.choices[*].delta.content"
+	DefaultStreamingJsonPath          = "$.choices[0].delta.content"
 )
 
 // RegexGuardrailPolicy implements regex-based content validation

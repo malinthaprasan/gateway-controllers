@@ -43,7 +43,7 @@ const (
 	sseDone                  = "[DONE]"
 	metaKeyAccContent        = "sentencecountguardrail:accumulated_content"
 	metaKeyAccJsonBody       = "sentencecountguardrail:json_body"
-	DefaultStreamingJsonPath = "$.choices[*].delta.content"
+	DefaultStreamingJsonPath = "$.choices[0].delta.content"
 )
 
 var (

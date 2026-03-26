@@ -46,7 +46,7 @@ const (
 
 	sseDataPrefix            = "data: "
 	sseDone                  = "[DONE]"
-	DefaultStreamingJsonPath = "$.choices[*].delta.content"
+	DefaultStreamingJsonPath = "$.choices[0].delta.content"
 	metaKeyAccJsonBody       = "urlguardrail:json_body"
 )
 

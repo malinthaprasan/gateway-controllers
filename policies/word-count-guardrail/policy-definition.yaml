@@ -1,5 +1,5 @@
 name: word-count-guardrail
-version: v0.9.1
+version: v0.9.2
 description: |
   Validate word counts in request or response content using min/max limits, optional JSONPath extraction, and optional inverted logic.
 
@@ -95,7 +95,7 @@ parameters:
             JSONPath expression to extract content from SSE streaming delta chunks.
             Used when the upstream returns a streaming (stream: true) response.
             Defaults to the standard OpenAI SSE delta content path.
-          default: "$.choices[*].delta.content"
+          default: "$.choices[0].delta.content"
         invert:
           type: boolean
           x-wso2-policy-advanced-param: true
