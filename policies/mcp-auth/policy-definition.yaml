@@ -38,7 +38,7 @@ parameters:
         exceptions:
           type: array
           x-wso2-policy-advanced-param: true
-          description: List of resource names to exclude from security checks.
+          description: List of resource URIs to exclude from security checks.
           default: []
           items:
             type: string
