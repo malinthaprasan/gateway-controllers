@@ -1,14 +1,12 @@
 package ratelimit
 
 import (
-	"bytes"
-	"compress/gzip"
 	"testing"
 
-	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
+	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestCostExtractor_ExtractResponseCost_GzipEncodedBody(t *testing.T) {
+func TestCostExtractor_ExtractResponseCostV2_PlainBody(t *testing.T) {
 	extractor := NewCostExtractor(CostExtractionConfig{
 		Enabled: true,
 		Default: 0,
@@ -21,28 +19,26 @@ func TestCostExtractor_ExtractResponseCost_GzipEncodedBody(t *testing.T) {
 		},
 	})
 
-	body := gzipBytes(t, []byte(`{"usage":{"prompt_tokens":42}}`))
-	ctx := &policy.ResponseContext{
-		ResponseHeaders: policy.NewHeaders(map[string][]string{
-			"content-encoding": {"gzip"},
-			"content-type":     {"application/json"},
+	ctx := &policyv1alpha2.ResponseContext{
+		ResponseHeaders: policyv1alpha2.NewHeaders(map[string][]string{
+			"content-type": {"application/json"},
 		}),
-		ResponseBody: &policy.Body{
+		ResponseBody: &policyv1alpha2.Body{
 			Present: true,
-			Content: body,
+			Content: []byte(`{"usage":{"prompt_tokens":42}}`),
 		},
 	}
 
-	cost, extracted := extractor.ExtractResponseCost(ctx)
+	cost, extracted := extractor.ExtractResponseCostV2(ctx)
 	if !extracted {
-		t.Fatal("expected extraction from gzip response body to succeed")
+		t.Fatal("expected extraction from response body to succeed")
 	}
 	if cost != 42 {
 		t.Fatalf("expected extracted cost to be 42, got %v", cost)
 	}
 }
 
-func TestCostExtractor_ExtractResponseCost_InvalidGzipBodyFallsBackToDefault(t *testing.T) {
+func TestCostExtractor_ExtractResponseCostV2_FallsBackToDefault(t *testing.T) {
 	extractor := NewCostExtractor(CostExtractionConfig{
 		Enabled: true,
 		Default: 7,
@@ -55,36 +51,21 @@ func TestCostExtractor_ExtractResponseCost_InvalidGzipBodyFallsBackToDefault(t *
 		},
 	})
 
-	ctx := &policy.ResponseContext{
-		ResponseHeaders: policy.NewHeaders(map[string][]string{
-			"content-encoding": {"gzip"},
-			"content-type":     {"application/json"},
+	ctx := &policyv1alpha2.ResponseContext{
+		ResponseHeaders: policyv1alpha2.NewHeaders(map[string][]string{
+			"content-type": {"application/json"},
 		}),
-		ResponseBody: &policy.Body{
+		ResponseBody: &policyv1alpha2.Body{
 			Present: true,
-			Content: []byte(`{"usage":{"prompt_tokens":42}}`),
+			Content: []byte(`{"invalid json`),
 		},
 	}
 
-	cost, extracted := extractor.ExtractResponseCost(ctx)
+	cost, extracted := extractor.ExtractResponseCostV2(ctx)
 	if extracted {
-		t.Fatal("expected extraction to fail for invalid gzip payload")
+		t.Fatal("expected extraction to fail for invalid JSON payload")
 	}
 	if cost != 7 {
 		t.Fatalf("expected default cost 7, got %v", cost)
 	}
-}
-
-func gzipBytes(t *testing.T, input []byte) []byte {
-	t.Helper()
-
-	var buf bytes.Buffer
-	w := gzip.NewWriter(&buf)
-	if _, err := w.Write(input); err != nil {
-		t.Fatalf("failed to gzip test input: %v", err)
-	}
-	if err := w.Close(); err != nil {
-		t.Fatalf("failed to close gzip writer: %v", err)
-	}
-	return buf.Bytes()
 }

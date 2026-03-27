@@ -75,7 +75,7 @@ func TestGetPolicy_RejectsEmptyOrWhitespaceTarget(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("Expected error containing %q, got nil", tt.errorStr)
 			}
@@ -609,7 +609,7 @@ func TestOnResponse_SSEListFiltering(t *testing.T) {
 
 func mustPolicy(t *testing.T, params map[string]any) policyv1alpha2.Policy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}

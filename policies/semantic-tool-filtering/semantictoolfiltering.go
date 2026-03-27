@@ -27,8 +27,7 @@ import (
 	"strings"
 
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
-	embeddingproviders "github.com/wso2/api-platform/sdk/utils/embeddingproviders"
+	embeddingproviders "github.com/wso2/api-platform/sdk/ai/utils/embeddingproviders"
 )
 
 const (
@@ -205,11 +204,11 @@ func (p *SemanticToolFilteringPolicy) processToolEmbeddingsWithCache(
 	return results
 }
 
-// GetPolicy creates a new instance of the semantic tool filtering policy
+// GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policy.PolicyMetadata,
+	metadata policyv1alpha2.PolicyMetadata,
 	params map[string]interface{},
-) (policy.Policy, error) {
+) (policyv1alpha2.Policy, error) {
 	p := &SemanticToolFilteringPolicy{}
 
 	// Parse and validate embedding provider configuration (from systemParameters)
@@ -238,18 +237,22 @@ func GetPolicy(
 	return p, nil
 }
 
-// GetPolicyV2 is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
+// GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
 	metadata policyv1alpha2.PolicyMetadata,
 	params map[string]interface{},
 ) (policyv1alpha2.Policy, error) {
-	return GetPolicy(policy.PolicyMetadata{
-		RouteName:  metadata.RouteName,
-		APIId:      metadata.APIId,
-		APIName:    metadata.APIName,
-		APIVersion: metadata.APIVersion,
-		AttachedTo: policy.Level(metadata.AttachedTo),
-	}, params)
+	return GetPolicy(metadata, params)
+}
+
+// Mode returns the processing mode for the semantic tool filtering policy.
+func (p *SemanticToolFilteringPolicy) Mode() policyv1alpha2.ProcessingMode {
+	return policyv1alpha2.ProcessingMode{
+		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
+		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
+		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
+		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+	}
 }
 
 // parseEmbeddingConfig parses and validates embedding provider configuration
@@ -517,16 +520,6 @@ func createEmbeddingProvider(config embeddingproviders.EmbeddingProviderConfig) 
 	return provider, nil
 }
 
-// Mode returns the processing mode for this policy
-func (p *SemanticToolFilteringPolicy) Mode() policy.ProcessingMode {
-	return policy.ProcessingMode{
-		RequestHeaderMode:  policy.HeaderModeSkip,
-		RequestBodyMode:    policy.BodyModeBuffer, // Need to read and modify request body
-		ResponseHeaderMode: policy.HeaderModeSkip,
-		ResponseBodyMode:   policy.BodyModeSkip,
-	}
-}
-
 // extractUserQueryFromText extracts user query from text content using <userq> tags
 func extractUserQueryFromText(content string) (string, error) {
 	startTag := "<userq>"
@@ -656,11 +649,6 @@ func cleanupWhitespace(content string) string {
 		content = strings.ReplaceAll(content, "\n\n\n", "\n\n")
 	}
 	return content
-}
-
-// OnResponse is a no-op for this policy (only modifies requests)
-func (p *SemanticToolFilteringPolicy) OnResponse(ctx *policy.ResponseContext, params map[string]interface{}) policy.ResponseAction {
-	return policy.UpstreamResponseModifications{}
 }
 
 // extractToolDescription extracts description text from a tool definition

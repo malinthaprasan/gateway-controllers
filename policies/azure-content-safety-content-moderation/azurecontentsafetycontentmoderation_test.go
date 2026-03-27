@@ -10,20 +10,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestAzureContentSafetyPolicy_Mode(t *testing.T) {
-	p := &AzureContentSafetyContentModerationPolicy{}
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeStream,
-	}
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestValidateAzureConfigParams(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -134,7 +120,7 @@ func TestAzureContentSafetyPolicy_GetPolicy_Errors(t *testing.T) {
 		"azureContentSafetyKey":      "k",
 	}
 
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, base)
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, base)
 	if err == nil || !strings.Contains(err.Error(), "at least one of 'request' or 'response' parameters must be provided") {
 		t.Fatalf("expected request/response presence error, got %v", err)
 	}
@@ -146,7 +132,7 @@ func TestAzureContentSafetyPolicy_GetPolicy_Errors(t *testing.T) {
 			"showAssessment": "true",
 		},
 	}
-	_, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, badReq)
+	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, badReq)
 	if err == nil || !strings.Contains(err.Error(), "invalid request parameters") {
 		t.Fatalf("expected invalid request parameters error, got %v", err)
 	}
@@ -330,7 +316,7 @@ func TestAzureContentSafetyPolicy_APIViolation_RequestAndResponse(t *testing.T) 
 
 func mustGetAzurePolicy(t *testing.T, params map[string]interface{}) *AzureContentSafetyContentModerationPolicy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

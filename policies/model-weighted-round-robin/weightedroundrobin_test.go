@@ -105,7 +105,7 @@ func TestModelWeightedRoundRobinPolicy_GetPolicy_ParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -322,7 +322,7 @@ func TestModelWeightedRoundRobinPolicy_SelectNextAvailable_SkipsSuspended(t *tes
 
 func mustGetWeightedPolicy(t *testing.T, params map[string]interface{}) *ModelWeightedRoundRobinPolicy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

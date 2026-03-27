@@ -25,33 +25,15 @@ import (
 )
 
 func TestGetPolicy(t *testing.T) {
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, nil)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, nil)
 	if err != nil {
-		t.Errorf("GetPolicyV2 returned error: %v", err)
+		t.Errorf("GetPolicy returned error: %v", err)
 	}
 	if p == nil {
-		t.Error("GetPolicyV2 returned nil policy")
+		t.Error("GetPolicy returned nil policy")
 	}
 	if _, ok := p.(*AnalyticsHeaderFilterPolicy); !ok {
-		t.Error("GetPolicyV2 returned wrong policy type")
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := &AnalyticsHeaderFilterPolicy{}
-	mode := p.Mode()
-
-	if mode.RequestHeaderMode != policyv1alpha2.HeaderModeProcess {
-		t.Errorf("Expected RequestHeaderMode to be HeaderModeProcess, got %v", mode.RequestHeaderMode)
-	}
-	if mode.RequestBodyMode != policyv1alpha2.BodyModeSkip {
-		t.Errorf("Expected RequestBodyMode to be BodyModeSkip, got %v", mode.RequestBodyMode)
-	}
-	if mode.ResponseHeaderMode != policyv1alpha2.HeaderModeProcess {
-		t.Errorf("Expected ResponseHeaderMode to be HeaderModeProcess, got %v", mode.ResponseHeaderMode)
-	}
-	if mode.ResponseBodyMode != policyv1alpha2.BodyModeSkip {
-		t.Errorf("Expected ResponseBodyMode to be BodyModeSkip, got %v", mode.ResponseBodyMode)
+		t.Error("GetPolicy returned wrong policy type")
 	}
 }
 

@@ -39,33 +39,16 @@ func assertConfigError(t *testing.T, resp policyv1alpha2.ImmediateResponse) {
 }
 
 func TestGetPolicyReturnsSingleton(t *testing.T) {
-	first, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	first, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("GetPolicyV2 failed: %v", err)
 	}
-	second, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	second, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("GetPolicyV2 failed: %v", err)
 	}
 	if first != second {
 		t.Fatalf("expected singleton policy instance")
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := &RespondPolicy{}
-	mode := p.Mode()
-	if mode.RequestHeaderMode != policyv1alpha2.HeaderModeProcess {
-		t.Fatalf("unexpected request header mode: %v", mode.RequestHeaderMode)
-	}
-	if mode.RequestBodyMode != policyv1alpha2.BodyModeSkip {
-		t.Fatalf("unexpected request body mode: %v", mode.RequestBodyMode)
-	}
-	if mode.ResponseHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("unexpected response header mode: %v", mode.ResponseHeaderMode)
-	}
-	if mode.ResponseBodyMode != policyv1alpha2.BodyModeSkip {
-		t.Fatalf("unexpected response body mode: %v", mode.ResponseBodyMode)
 	}
 }
 

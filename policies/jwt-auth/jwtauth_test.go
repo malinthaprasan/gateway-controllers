@@ -39,7 +39,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
 )
 
 // TestJWTAuthPolicy_ValidToken tests successful JWT authentication
@@ -96,7 +95,7 @@ func TestJWTAuthPolicy_ValidToken(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -152,7 +151,7 @@ func TestJWTAuthPolicy_MissingToken(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -197,7 +196,7 @@ func TestJWTAuthPolicy_InvalidTokenFormat(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -246,7 +245,7 @@ func TestJWTAuthPolicy_ExpiredToken(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -294,7 +293,7 @@ func TestJWTAuthPolicy_InvalidAudience(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -344,7 +343,7 @@ func TestJWTAuthPolicy_CustomClaims(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -394,7 +393,7 @@ func TestJWTAuthPolicy_InvalidCustomClaims(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -445,7 +444,7 @@ func TestJWTAuthPolicy_InvalidSignature(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -497,7 +496,7 @@ func TestJWTAuthPolicy_CustomHeaderPrefix(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -532,7 +531,7 @@ func TestJWTAuthPolicy_ErrorResponseFormatJSON(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -567,7 +566,7 @@ func TestJWTAuthPolicy_ErrorResponseFormatPlain(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -654,7 +653,7 @@ func TestJWTAuthPolicy_RemoteWithSelfSignedCert(t *testing.T) {
 		"audiences": []interface{}{"api-audience"},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -747,7 +746,7 @@ func TestJWTAuthPolicy_SkipTlsVerify_Success(t *testing.T) {
 		"audiences": []interface{}{"api-audience"},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -841,7 +840,7 @@ func TestJWTAuthPolicy_SkipTlsVerify_False_Fails(t *testing.T) {
 		"jwksFetchRetryCount": 0,
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -907,7 +906,7 @@ func TestJWTAuthPolicy_LocalInlineCertificate(t *testing.T) {
 		"audiences": []interface{}{"api-audience"},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -969,7 +968,7 @@ func TestJWTAuthPolicy_LocalCertificateFile(t *testing.T) {
 		"audiences": []interface{}{"api-audience"},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -1065,21 +1064,6 @@ func createJWKSServer(t *testing.T, publicKey *rsa.PublicKey, kid string) *httpt
 	}))
 
 	return server
-}
-
-// createMockRequestContext creates a v1alpha RequestContext for private helper tests
-// (handleAuthSuccess, handleAuthFailure) which still use the v1alpha interface.
-func createMockRequestContext(headers map[string][]string) *policy.RequestContext {
-	return &policy.RequestContext{
-		SharedContext: &policy.SharedContext{
-			RequestID: "test-request-id",
-			Metadata:  make(map[string]interface{}),
-		},
-		Headers: policy.NewHeaders(headers),
-		Body:    nil,
-		Path:    "/api/test",
-		Method:  "GET",
-	}
 }
 
 // createMockRequestHeaderContext creates a v1alpha2 RequestHeaderContext for OnRequestHeaders tests.
@@ -1358,9 +1342,9 @@ func TestJWTAuthPolicy_UserIdClaim_DefaultSub(t *testing.T) {
 		// userIdClaim not specified, should default to "sub"
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1415,9 +1399,9 @@ func TestJWTAuthPolicy_UserIdClaim_CustomClaim(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1474,9 +1458,9 @@ func TestJWTAuthPolicy_UserIdClaim_EmailClaim(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1533,9 +1517,9 @@ func TestJWTAuthPolicy_UserIdClaim_MissingClaim(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1590,9 +1574,9 @@ func TestJWTAuthPolicy_UserIdClaim_NumericValue(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1648,9 +1632,9 @@ func TestJWTAuthPolicy_UserIdClaim_EmptyString(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1710,9 +1694,9 @@ func TestJWTAuthPolicy_UserIdClaim_WithClaimMappings(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	action := p.(*JwtAuthPolicy).OnRequestHeaders(ctx, params)
@@ -1741,39 +1725,3 @@ func TestJWTAuthPolicy_UserIdClaim_WithClaimMappings(t *testing.T) {
 	}
 }
 
-// TestJWTAuthPolicy_AuthContext_PreviousPreserved_OnSuccess tests that the v1alpha helper
-// chains AuthContext entries on success.
-func TestJWTAuthPolicy_AuthContext_PreviousPreserved_OnSuccess(t *testing.T) {
-	p := &JwtAuthPolicy{}
-	prior := &policy.AuthContext{Authenticated: true, AuthType: "other"}
-	ctx := createMockRequestContext(nil)
-	ctx.SharedContext.AuthContext = prior
-
-	claims := jwt.MapClaims{"sub": "alice", "iss": "https://issuer.example.com"}
-	p.handleAuthSuccess(ctx, claims, nil, "sub")
-
-	if ctx.SharedContext.AuthContext == nil {
-		t.Fatal("Expected AuthContext to be set")
-	}
-	if ctx.SharedContext.AuthContext.Previous != prior {
-		t.Errorf("Expected Previous to point to prior AuthContext, got %v", ctx.SharedContext.AuthContext.Previous)
-	}
-}
-
-// TestJWTAuthPolicy_AuthContext_PreviousPreserved_OnFailure tests that the v1alpha helper
-// chains AuthContext entries on failure.
-func TestJWTAuthPolicy_AuthContext_PreviousPreserved_OnFailure(t *testing.T) {
-	p := &JwtAuthPolicy{}
-	prior := &policy.AuthContext{Authenticated: true, AuthType: "other"}
-	ctx := createMockRequestContext(nil)
-	ctx.SharedContext.AuthContext = prior
-
-	p.handleAuthFailure(ctx, 401, "json", "Unauthorized", "token validation failed")
-
-	if ctx.SharedContext.AuthContext == nil {
-		t.Fatal("Expected AuthContext to be set")
-	}
-	if ctx.SharedContext.AuthContext.Previous != prior {
-		t.Errorf("Expected Previous to point to prior AuthContext, got %v", ctx.SharedContext.AuthContext.Previous)
-	}
-}

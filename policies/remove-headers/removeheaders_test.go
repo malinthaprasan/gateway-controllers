@@ -33,27 +33,11 @@ func createTestHeaders(headers map[string]string) *policyv1alpha2.Headers {
 	return policyv1alpha2.NewHeaders(headerMap)
 }
 
-func TestRemoveHeadersPolicy_Mode(t *testing.T) {
-	p := &RemoveHeadersPolicy{}
-	mode := p.Mode()
-
-	expectedMode := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-
-	if mode != expectedMode {
-		t.Errorf("Expected mode %+v, got %+v", expectedMode, mode)
-	}
-}
-
 func TestGetPolicy(t *testing.T) {
 	metadata := policyv1alpha2.PolicyMetadata{}
 	params := map[string]interface{}{}
 
-	p, err := GetPolicyV2(metadata, params)
+	p, err := GetPolicy(metadata, params)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

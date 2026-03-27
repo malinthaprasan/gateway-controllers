@@ -6,12 +6,9 @@ import (
 	"testing"
 
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
 )
 
 type stubDelegatePolicy struct {
-	mode policyv1alpha2.ProcessingMode
-
 	onRequestHeadersAction policyv1alpha2.RequestHeaderAction
 	onRequestHeadersCtx    *policyv1alpha2.RequestHeaderContext
 	onRequestHeadersParams map[string]interface{}
@@ -21,24 +18,6 @@ type stubDelegatePolicy struct {
 	onResponseHeadersCtx    *policyv1alpha2.ResponseHeaderContext
 	onResponseHeadersParams map[string]interface{}
 	onResponseHeadersCalls  int
-}
-
-func (s *stubDelegatePolicy) Mode() policyv1alpha2.ProcessingMode {
-	return s.mode
-}
-
-func (s *stubDelegatePolicy) OnRequest(
-	ctx *policy.RequestContext,
-	params map[string]interface{},
-) policy.RequestAction {
-	return nil
-}
-
-func (s *stubDelegatePolicy) OnResponse(
-	ctx *policy.ResponseContext,
-	params map[string]interface{},
-) policy.ResponseAction {
-	return nil
 }
 
 func (s *stubDelegatePolicy) OnRequestHeaders(
@@ -123,8 +102,8 @@ func TestTransformToRatelimitParams_DefaultQuotaAndRouteNameKeyExtraction(t *tes
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{
-		AttachedTo: policy.LevelRoute,
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{
+		AttachedTo: policyv1alpha2.LevelRoute,
 	})
 
 	quota := getSingleQuota(t, rlParams)
@@ -148,8 +127,8 @@ func TestTransformToRatelimitParams_UsesAPINameKeyExtractionAtAPILevel(t *testin
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{
-		AttachedTo: policy.LevelAPI,
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{
+		AttachedTo: policyv1alpha2.LevelAPI,
 	})
 
 	quota := getSingleQuota(t, rlParams)
@@ -168,7 +147,7 @@ func TestTransformToRatelimitParams_TranslatesRequestsToLimitAndRemovesRequests(
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 
 	limits := getQuotaLimits(t, quota)
@@ -200,7 +179,7 @@ func TestTransformToRatelimitParams_AllowsLegacyLimitWhenRequestsAbsent(t *testi
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 	if len(limits) != 1 {
@@ -228,7 +207,7 @@ func TestTransformToRatelimitParams_RequestsOverridesLimitWhenBothPresent(t *tes
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 	if len(limits) != 1 {
@@ -267,7 +246,7 @@ func TestTransformToRatelimitParams_TranslatesMultipleLimitEntries(t *testing.T)
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 
@@ -318,7 +297,7 @@ func TestTransformToRatelimitParams_PassesThroughSystemParamsIncludingNestedMaps
 		"memory":    memory,
 	}
 
-	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 
 	if got := rlParams["algorithm"]; got != "gcra" {
 		t.Fatalf("expected algorithm passthrough gcra, got %v", got)
@@ -348,7 +327,7 @@ func TestTransformToRatelimitParams_DoesNotMutateInputLimits(t *testing.T) {
 		"limits": []interface{}{inputLimit},
 	}
 
-	_ = transformToRatelimitParams(params, policy.PolicyMetadata{})
+	_ = transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
 
 	if _, hasRequests := inputLimit["requests"]; !hasRequests {
 		t.Fatalf("expected original input map to still contain requests key")
@@ -407,7 +386,7 @@ func TestTransformToRatelimitParams_HandlesMissingOrMalformedLimitsWithoutPanic(
 				}
 			}()
 
-			rlParams := transformToRatelimitParams(tc.params, policy.PolicyMetadata{})
+			rlParams := transformToRatelimitParams(tc.params, policyv1alpha2.PolicyMetadata{})
 			quota := getSingleQuota(t, rlParams)
 			limits := getQuotaLimits(t, quota)
 
@@ -431,22 +410,6 @@ func TestTransformToRatelimitParams_HandlesMissingOrMalformedLimitsWithoutPanic(
 				}
 			}
 		})
-	}
-}
-
-func TestBasicRateLimitPolicy_Mode_ProcessesHeadersAndSkipsBodies(t *testing.T) {
-	p := &BasicRateLimitPolicy{}
-	gotMode := p.Mode()
-
-	wantMode := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-
-	if gotMode != wantMode {
-		t.Fatalf("unexpected mode.\nwant=%+v\ngot=%+v", wantMode, gotMode)
 	}
 }
 
@@ -538,7 +501,7 @@ func TestBasicRateLimitPolicy_OnResponseHeaders_ForwardsContextParamsAndActionUn
 	}
 }
 
-func TestGetPolicyV2_ReturnsBasicRateLimitPolicy_WhenDelegateCreationSucceeds(t *testing.T) {
+func TestGetPolicy_ReturnsBasicRateLimitPolicy_WhenDelegateCreationSucceeds(t *testing.T) {
 	metadata := policyv1alpha2.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-success",
 	}
@@ -554,19 +517,19 @@ func TestGetPolicyV2_ReturnsBasicRateLimitPolicy_WhenDelegateCreationSucceeds(t 
 		"backend":   "memory",
 	}
 
-	p, err := GetPolicyV2(metadata, params)
+	p, err := GetPolicy(metadata, params)
 	if err != nil {
-		t.Fatalf("expected GetPolicyV2 success, got error: %v", err)
+		t.Fatalf("expected GetPolicy success, got error: %v", err)
 	}
 	if p == nil {
-		t.Fatalf("expected non-nil policy from GetPolicyV2")
+		t.Fatalf("expected non-nil policy from GetPolicy")
 	}
 	if _, ok := p.(*BasicRateLimitPolicy); !ok {
 		t.Fatalf("expected *BasicRateLimitPolicy, got %T", p)
 	}
 }
 
-func TestGetPolicyV2_PropagatesError_WhenDelegateCreationFails(t *testing.T) {
+func TestGetPolicy_PropagatesError_WhenDelegateCreationFails(t *testing.T) {
 	metadata := policyv1alpha2.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-error",
 	}
@@ -581,19 +544,19 @@ func TestGetPolicyV2_PropagatesError_WhenDelegateCreationFails(t *testing.T) {
 		"backend": "memory",
 	}
 
-	p, err := GetPolicyV2(metadata, params)
+	p, err := GetPolicy(metadata, params)
 	if err == nil {
-		t.Fatalf("expected GetPolicyV2 error for invalid limit value type, got nil")
+		t.Fatalf("expected GetPolicy error for invalid limit value type, got nil")
 	}
 	if p != nil {
-		t.Fatalf("expected nil policy when GetPolicyV2 fails, got %T", p)
+		t.Fatalf("expected nil policy when GetPolicy fails, got %T", p)
 	}
 	if !strings.Contains(err.Error(), "limit must be a number") {
 		t.Fatalf("expected propagated delegate parse error to mention numeric limit, got: %v", err)
 	}
 }
 
-func TestGetPolicyV2_AcceptsLegacyLimitShape_ForDocsCompatibility(t *testing.T) {
+func TestGetPolicy_AcceptsLegacyLimitShape_ForDocsCompatibility(t *testing.T) {
 	metadata := policyv1alpha2.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-legacy-limit",
 	}
@@ -609,9 +572,9 @@ func TestGetPolicyV2_AcceptsLegacyLimitShape_ForDocsCompatibility(t *testing.T) 
 		"backend":   "memory",
 	}
 
-	p, err := GetPolicyV2(metadata, params)
+	p, err := GetPolicy(metadata, params)
 	if err != nil {
-		t.Fatalf("expected GetPolicyV2 to accept legacy limit shape, got error: %v", err)
+		t.Fatalf("expected GetPolicy to accept legacy limit shape, got error: %v", err)
 	}
 	if p == nil {
 		t.Fatalf("expected non-nil policy for legacy limit shape")

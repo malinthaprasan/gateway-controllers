@@ -53,13 +53,13 @@ func makePIIIntervenedOutput(match string) *bedrockruntime.ApplyGuardrailOutput 
 }
 
 func TestGetPolicy_ValidatesRequiredAndPhaseParams(t *testing.T) {
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil || !strings.Contains(err.Error(), "'region' parameter is required") {
 		t.Fatalf("expected missing region error, got: %v", err)
 	}
 
 	params := baseParams()
-	_, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err == nil || !strings.Contains(err.Error(), "at least one of 'request' or 'response' parameters must be provided") {
 		t.Fatalf("expected missing phase params error, got: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestGetPolicy_ValidatesRequiredAndPhaseParams(t *testing.T) {
 	params["request"] = map[string]interface{}{
 		"jsonPath": 1, // invalid type
 	}
-	_, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err == nil || !strings.Contains(err.Error(), "invalid request parameters") {
 		t.Fatalf("expected invalid request params error, got: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestGetPolicy_RequestRedactForcesResponseRedact(t *testing.T) {
 		"redactPII": false,
 	}
 
-	pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("GetPolicy returned error: %v", err)
 	}

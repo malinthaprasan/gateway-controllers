@@ -155,7 +155,7 @@ func TestModelRoundRobinPolicy_GetPolicy_ParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -358,7 +358,7 @@ func TestModelRoundRobinPolicy_ExtractInt(t *testing.T) {
 
 func mustGetRRPolicy(t *testing.T, params map[string]interface{}) *ModelRoundRobinPolicy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

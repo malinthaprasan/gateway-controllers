@@ -8,21 +8,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestCorsPolicy_Mode(t *testing.T) {
-	p := &CorsPolicy{}
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestCorsPolicy_GetPolicy_Defaults(t *testing.T) {
 	p := mustGetCorsPolicy(t, map[string]any{})
 
@@ -114,7 +99,7 @@ func TestCorsPolicy_GetPolicy_AllowCredentialsWildcardRejections(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -126,7 +111,7 @@ func TestCorsPolicy_GetPolicy_AllowCredentialsWildcardRejections(t *testing.T) {
 }
 
 func TestCorsPolicy_GetPolicy_InvalidOriginRegex(t *testing.T) {
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]any{
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]any{
 		"allowedOrigins": []any{"[invalid-regex"},
 	})
 	if err == nil {
@@ -403,9 +388,9 @@ func TestCorsPolicy_OnRequestHeaders_PreflightSpecificAllowedHeadersCaseInsensit
 
 func mustGetCorsPolicy(t *testing.T, params map[string]any) *CorsPolicy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 	cp, ok := p.(*CorsPolicy)
 	if !ok {

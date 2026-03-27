@@ -174,7 +174,7 @@ func TestParseParams_DisabledFlow_DoesNotRequireSchema(t *testing.T) {
 
 func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	t.Run("request flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -197,7 +197,7 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	})
 
 	t.Run("response flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"response": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -220,7 +220,7 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	})
 
 	t.Run("disabled flow accepts empty schema", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{
 				"enabled": false,
 				"schema":  "",
@@ -239,27 +239,27 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	})
 }
 
-func TestGetPolicyV2(t *testing.T) {
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+func TestGetPolicy(t *testing.T) {
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil || !strings.Contains(err.Error(), "at least one of 'request' or 'response' parameters must be provided") {
 		t.Fatalf("expected missing phase params error, got %v", err)
 	}
 
-	_, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 		"request": map[string]interface{}{"schema": "{"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "invalid request parameters") {
 		t.Fatalf("expected invalid request params error, got %v", err)
 	}
 
-	_, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 		"response": map[string]interface{}{"schema": "{"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "invalid response parameters") {
 		t.Fatalf("expected invalid response params error, got %v", err)
 	}
 
-	pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 		"request": map[string]interface{}{"schema": `{"type":"object"}`},
 	})
 	if err != nil {
@@ -279,7 +279,7 @@ func TestGetPolicyV2(t *testing.T) {
 		t.Fatalf("expected request disabled by default")
 	}
 
-	pRaw, err = GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	pRaw, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 		"request":  map[string]interface{}{"schema": `{"type":"object"}`},
 		"response": map[string]interface{}{"schema": `{"type":"object"}`},
 	})
@@ -329,24 +329,6 @@ func TestExtractValueFromJSONPathForSchema(t *testing.T) {
 	_, err = extractValueFromJSONPathForSchema([]byte(`{"data":{"name":"alice"}}`), "$.missing")
 	if err == nil || !strings.Contains(err.Error(), "key not found") {
 		t.Fatalf("expected missing path error, got %v", err)
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := &JSONSchemaGuardrailPolicy{}
-	mode := p.Mode()
-
-	if mode.RequestHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("expected RequestHeaderMode=Skip, got %v", mode.RequestHeaderMode)
-	}
-	if mode.RequestBodyMode != policyv1alpha2.BodyModeBuffer {
-		t.Fatalf("expected RequestBodyMode=Buffer, got %v", mode.RequestBodyMode)
-	}
-	if mode.ResponseHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("expected ResponseHeaderMode=Skip, got %v", mode.ResponseHeaderMode)
-	}
-	if mode.ResponseBodyMode != policyv1alpha2.BodyModeBuffer {
-		t.Fatalf("expected ResponseBodyMode=Buffer, got %v", mode.ResponseBodyMode)
 	}
 }
 

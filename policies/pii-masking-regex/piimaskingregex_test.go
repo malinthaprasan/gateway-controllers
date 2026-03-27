@@ -9,20 +9,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestPIIMaskingRegexPolicy_Mode(t *testing.T) {
-	p := &PIIMaskingRegexPolicy{}
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeStream,
-	}
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestPIIMaskingRegexPolicy_GetPolicy_ParseErrors(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -120,7 +106,7 @@ func TestPIIMaskingRegexPolicy_GetPolicy_ParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -335,7 +321,7 @@ func TestPIIMaskingRegexPolicy_OnResponse_NoOpCases(t *testing.T) {
 
 func mustGetPIIPolicy(t *testing.T, params map[string]interface{}) *PIIMaskingRegexPolicy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

@@ -260,7 +260,7 @@ func TestGetPolicy(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tc.params)
+			pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tc.params)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
@@ -283,24 +283,6 @@ func TestGetPolicy(t *testing.T) {
 				tc.check(t, p)
 			}
 		})
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := &URLGuardrailPolicy{}
-	mode := p.Mode()
-
-	if mode.RequestHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("expected RequestHeaderMode=Skip, got %v", mode.RequestHeaderMode)
-	}
-	if mode.RequestBodyMode != policyv1alpha2.BodyModeBuffer {
-		t.Fatalf("expected RequestBodyMode=Buffer, got %v", mode.RequestBodyMode)
-	}
-	if mode.ResponseHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("expected ResponseHeaderMode=Skip, got %v", mode.ResponseHeaderMode)
-	}
-	if mode.ResponseBodyMode != policyv1alpha2.BodyModeStream {
-		t.Fatalf("expected ResponseBodyMode=Stream, got %v", mode.ResponseBodyMode)
 	}
 }
 

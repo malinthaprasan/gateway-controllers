@@ -26,7 +26,7 @@ func parseErrorJSON(t *testing.T, body []byte) map[string]interface{} {
 func newConfiguredPolicy(t *testing.T, params map[string]interface{}) *JSONXMLMediationPolicy {
 	t.Helper()
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestGetPolicy_InvalidUpstreamFormatConfig(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tc.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tc.params)
 			if err == nil {
 				t.Fatalf("expected error for params %#v", tc.params)
 			}
@@ -134,20 +134,6 @@ func TestGetPolicy_InvalidUpstreamFormatConfig(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %q", tc.expectMsg, err.Error())
 			}
 		})
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := newConfiguredPolicy(t, configuredParams("xml", "json"))
-	mode := p.Mode()
-	expected := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeBuffer,
-	}
-	if mode != expected {
-		t.Fatalf("unexpected mode: %+v", mode)
 	}
 }
 

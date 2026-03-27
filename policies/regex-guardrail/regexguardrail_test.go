@@ -8,21 +8,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestRegexGuardrailPolicy_Mode(t *testing.T) {
-	p := &RegexGuardrailPolicy{}
-
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeStream,
-	}
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestRegexGuardrailPolicy_GetPolicy_Defaults_RequestOnly(t *testing.T) {
 	p := mustGetRegexPolicy(t, map[string]interface{}{
 		"request": map[string]interface{}{
@@ -204,7 +189,7 @@ func TestRegexGuardrailPolicy_GetPolicy_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -248,7 +233,7 @@ func TestRegexGuardrailPolicy_ParseParams_DisabledFlow_DoesNotRequireRegex(t *te
 
 func TestRegexGuardrailPolicy_DisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	t.Run("request flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -269,7 +254,7 @@ func TestRegexGuardrailPolicy_DisabledFlow_GetPolicyAndHandlers_NoRequiredParams
 	})
 
 	t.Run("response flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"response": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -601,7 +586,7 @@ func TestRegexGuardrailPolicy_BuildAssessmentObject(t *testing.T) {
 func mustGetRegexPolicy(t *testing.T, params map[string]interface{}) *RegexGuardrailPolicy {
 	t.Helper()
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

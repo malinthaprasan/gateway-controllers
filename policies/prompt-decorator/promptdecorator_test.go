@@ -10,22 +10,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestPromptDecoratorPolicy_Mode(t *testing.T) {
-	p := &PromptDecoratorPolicy{}
-
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestPromptDecoratorPolicy_GetPolicy_TextConfig_Defaults(t *testing.T) {
 	p := mustGetPromptDecoratorPolicy(t, map[string]interface{}{
 		"promptDecoratorConfig": map[string]interface{}{
@@ -197,7 +181,7 @@ func TestPromptDecoratorPolicy_GetPolicy_InvalidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -614,7 +598,7 @@ func TestPromptDecoratorPolicy_OnRequest_ConcurrentAccess(t *testing.T) {
 func mustGetPromptDecoratorPolicy(t *testing.T, params map[string]interface{}) *PromptDecoratorPolicy {
 	t.Helper()
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

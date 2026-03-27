@@ -102,26 +102,10 @@ func getHeaderValue(headers map[string]interface{}, name string) (interface{}, b
 	return nil, false
 }
 
-func TestLogMessagePolicy_Mode(t *testing.T) {
-	p := &LogMessagePolicy{}
-	mode := p.Mode()
-
-	expectedMode := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeStream,
-	}
-
-	if mode != expectedMode {
-		t.Fatalf("expected mode %+v, got %+v", expectedMode, mode)
-	}
-}
-
-func TestGetPolicyV2(t *testing.T) {
-	policyInstance, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+func TestGetPolicy(t *testing.T) {
+	policyInstance, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 
 	if _, ok := policyInstance.(*LogMessagePolicy); !ok {

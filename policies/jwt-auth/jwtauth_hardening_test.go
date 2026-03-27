@@ -871,9 +871,9 @@ func executeOnRequestHeaders(t *testing.T, params map[string]interface{}, header
 
 func mustGetPolicy(t *testing.T, params map[string]interface{}) policyv1alpha2.Policy {
 	t.Helper()
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
-		t.Fatalf("GetPolicyV2 failed: %v", err)
+		t.Fatalf("GetPolicy failed: %v", err)
 	}
 	return p
 }

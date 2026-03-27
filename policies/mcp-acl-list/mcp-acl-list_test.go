@@ -199,7 +199,7 @@ func TestGetPolicy_ValidationCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if tt.wantErr != "" {
 				if err == nil {
 					t.Fatalf("Expected error containing %q, got nil", tt.wantErr)
@@ -253,7 +253,7 @@ func TestOnRequest_DenyWhenException(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -287,7 +287,7 @@ func TestOnRequest_AllowWhenNotException(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -321,7 +321,7 @@ func TestOnRequest_DenySSERequestWithSessionHeader(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -390,7 +390,7 @@ func TestOnResponse_FilterList_DenyMode(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -443,7 +443,7 @@ func TestOnResponse_FilterList_ResourcesUri(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}
@@ -496,7 +496,7 @@ func TestOnResponse_SSEFilterOnlyListEvents(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("Failed to create policy: %v", err)
 	}

@@ -24,7 +24,7 @@ import (
 	"sort"
 
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	utils "github.com/wso2/api-platform/sdk/utils"
+	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
 // OnRequestBody is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).

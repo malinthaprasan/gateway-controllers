@@ -221,7 +221,7 @@ func TestParseParams_DisabledFlow_DoesNotRequireMinMax(t *testing.T) {
 
 func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	t.Run("request flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -244,7 +244,7 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	})
 
 	t.Run("response flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"response": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -287,7 +287,7 @@ func TestParseParams_DisabledFlow_IgnoresProvidedMinMax(t *testing.T) {
 
 func TestGetPolicy_EmptyFlowObject_IsIgnored(t *testing.T) {
 	t.Run("request configured with empty response object", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request":  map[string]interface{}{"min": 1, "max": 10},
 			"response": map[string]interface{}{},
 		})
@@ -308,7 +308,7 @@ func TestGetPolicy_EmptyFlowObject_IsIgnored(t *testing.T) {
 	})
 
 	t.Run("response configured with empty request object", func(t *testing.T) {
-		pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request":  map[string]interface{}{},
 			"response": map[string]interface{}{"enabled": true, "min": 1, "max": 10},
 		})
@@ -329,7 +329,7 @@ func TestGetPolicy_EmptyFlowObject_IsIgnored(t *testing.T) {
 	})
 
 	t.Run("both empty objects still fail", func(t *testing.T) {
-		_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
 			"request":  map[string]interface{}{},
 			"response": map[string]interface{}{},
 		})
@@ -444,7 +444,7 @@ func TestGetPolicy(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			pRaw, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tc.params)
+			pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tc.params)
 			if tc.expectErr {
 				if err == nil {
 					t.Fatalf("expected error, got nil")
@@ -467,24 +467,6 @@ func TestGetPolicy(t *testing.T) {
 				tc.check(t, p)
 			}
 		})
-	}
-}
-
-func TestMode(t *testing.T) {
-	p := &SentenceCountGuardrailPolicy{}
-	mode := p.Mode()
-
-	if mode.RequestHeaderMode != policyv1alpha2.HeaderModeProcess {
-		t.Fatalf("expected RequestHeaderMode=Process, got %v", mode.RequestHeaderMode)
-	}
-	if mode.RequestBodyMode != policyv1alpha2.BodyModeBuffer {
-		t.Fatalf("expected RequestBodyMode=Buffer, got %v", mode.RequestBodyMode)
-	}
-	if mode.ResponseHeaderMode != policyv1alpha2.HeaderModeSkip {
-		t.Fatalf("expected ResponseHeaderMode=Skip, got %v", mode.ResponseHeaderMode)
-	}
-	if mode.ResponseBodyMode != policyv1alpha2.BodyModeStream {
-		t.Fatalf("expected ResponseBodyMode=Stream, got %v", mode.ResponseBodyMode)
 	}
 }
 

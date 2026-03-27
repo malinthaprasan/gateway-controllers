@@ -10,9 +10,8 @@ import (
 	"time"
 
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	policy "github.com/wso2/api-platform/sdk/gateway/policy/v1alpha"
-	embeddingproviders "github.com/wso2/api-platform/sdk/utils/embeddingproviders"
-	vectordbproviders "github.com/wso2/api-platform/sdk/utils/vectordbproviders"
+	embeddingproviders "github.com/wso2/api-platform/sdk/ai/utils/embeddingproviders"
+	vectordbproviders "github.com/wso2/api-platform/sdk/ai/utils/vectordbproviders"
 )
 
 type mockEmbeddingProvider struct {
@@ -77,22 +76,8 @@ func (m *mockVectorDBProvider) Close() error {
 	return nil
 }
 
-func TestSemanticCachePolicy_Mode(t *testing.T) {
-	p := &SemanticCachePolicy{}
-	got := p.Mode()
-	want := policy.ProcessingMode{
-		RequestHeaderMode:  policy.HeaderModeSkip,
-		RequestBodyMode:    policy.BodyModeBuffer,
-		ResponseHeaderMode: policy.HeaderModeSkip,
-		ResponseBodyMode:   policy.BodyModeBuffer,
-	}
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestGetPolicy_InvalidParams(t *testing.T) {
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil {
 		t.Fatalf("expected error")
 	}
@@ -588,32 +573,6 @@ func TestSemanticCachePolicy_OnResponse(t *testing.T) {
 			action := tt.policy.OnResponseBody(tt.ctx, nil)
 			tt.assertion(t, action)
 		})
-	}
-}
-
-func TestBuildErrorResponse(t *testing.T) {
-	p := &SemanticCachePolicy{}
-	action := p.buildErrorResponse("jsonpath failed", errors.New("bad path"))
-	resp, ok := action.(policy.ImmediateResponse)
-	if !ok {
-		t.Fatalf("expected ImmediateResponse, got %T", action)
-	}
-	if resp.StatusCode != 400 {
-		t.Fatalf("unexpected status: %d", resp.StatusCode)
-	}
-	if resp.Headers["Content-Type"] != "application/json" {
-		t.Fatalf("unexpected content type: %q", resp.Headers["Content-Type"])
-	}
-	var body map[string]interface{}
-	if err := json.Unmarshal(resp.Body, &body); err != nil {
-		t.Fatalf("invalid json body: %v", err)
-	}
-	if body["type"] != "SEMANTIC_CACHE" {
-		t.Fatalf("unexpected type: %v", body["type"])
-	}
-	msg, _ := body["message"].(string)
-	if !strings.Contains(msg, "jsonpath failed") || !strings.Contains(msg, "bad path") {
-		t.Fatalf("unexpected message: %q", msg)
 	}
 }
 

@@ -10,22 +10,6 @@ import (
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
-func TestPromptTemplatePolicy_Mode(t *testing.T) {
-	p := &PromptTemplatePolicy{}
-
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestPromptTemplatePolicy_GetPolicy_MinimalSuccess(t *testing.T) {
 	p := mustGetPromptTemplatePolicy(t, baseParams())
 
@@ -169,7 +153,7 @@ func TestPromptTemplatePolicy_GetPolicy_InvalidParams(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -599,7 +583,7 @@ func TestPromptTemplatePolicy_OnRequestBody_ConcurrentAccess(t *testing.T) {
 func mustGetPromptTemplatePolicy(t *testing.T, params map[string]interface{}) *PromptTemplatePolicy {
 	t.Helper()
 
-	p, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}

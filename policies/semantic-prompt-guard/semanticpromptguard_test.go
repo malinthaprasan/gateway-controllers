@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
-	embeddingproviders "github.com/wso2/api-platform/sdk/utils/embeddingproviders"
+	embeddingproviders "github.com/wso2/api-platform/sdk/ai/utils/embeddingproviders"
 )
 
 type mockEmbeddingProvider struct {
@@ -43,22 +43,8 @@ func (m *mockEmbeddingProvider) GetEmbeddings(inputs []string) ([][]float32, err
 	return result, nil
 }
 
-func TestSemanticPromptGuardPolicy_Mode(t *testing.T) {
-	p := &SemanticPromptGuardPolicy{}
-	got := p.Mode()
-	want := policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
-	}
-	if got != want {
-		t.Fatalf("unexpected mode: got %+v, want %+v", got, want)
-	}
-}
-
 func TestGetPolicy_InvalidEmbeddingConfig(t *testing.T) {
-	_, err := GetPolicyV2(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil {
 		t.Fatalf("expected error for missing embedding config")
 	}
