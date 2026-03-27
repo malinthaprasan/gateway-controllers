@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -75,9 +75,9 @@ type McpAuthzPolicy struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	slog.Debug("MCP Authorization Policy: GetPolicy called")
 
 	p := &McpAuthzPolicy{}
@@ -97,9 +97,9 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
@@ -223,16 +223,16 @@ func parseRuleItem(ruleMap map[string]any, arrayKey string, index int, attribute
 	return rule, nil
 }
 
-func (p *McpAuthzPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *McpAuthzPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeSkip,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
-func (p *McpAuthzPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]any) policyv1alpha2.RequestAction {
+func (p *McpAuthzPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]any) policy.RequestAction {
 	if strings.EqualFold(ctx.Method, "POST") && strings.Contains(ctx.Path, "/mcp") {
 		slog.Debug("MCP Authorization Policy: Processing MCP request for authorization")
 	} else {
@@ -294,7 +294,7 @@ func (p *McpAuthzPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map
 	return nil
 }
 
-func (p *McpAuthzPolicy) handleAuthFailure(ctx *policyv1alpha2.RequestContext, errorMessage string, scopeMap map[string]struct{}) policyv1alpha2.RequestAction {
+func (p *McpAuthzPolicy) handleAuthFailure(ctx *policy.RequestContext, errorMessage string, scopeMap map[string]struct{}) policy.RequestAction {
 	slog.Debug("MCP Authorization Policy: handleAuthFailure called",
 		"errorMessage", errorMessage,
 	)
@@ -317,7 +317,7 @@ func (p *McpAuthzPolicy) handleAuthFailure(ctx *policyv1alpha2.RequestContext, e
 	}
 	bodyBytes, _ := json.Marshal(errResponse)
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: 403,
 		Headers:    headers,
 		Body:       bodyBytes,
@@ -365,7 +365,7 @@ func (p *McpAuthzPolicy) getAttributeNameFromParams(method string, params MCPReq
 }
 
 // checkAuthorization validates whether the request should be authorized
-func (p *McpAuthzPolicy) checkAuthorization(attributeType, attributeName, method string, authCtx *policyv1alpha2.AuthContext) (bool, map[string]struct{}) {
+func (p *McpAuthzPolicy) checkAuthorization(attributeType, attributeName, method string, authCtx *policy.AuthContext) (bool, map[string]struct{}) {
 	if len(p.Rules) == 0 {
 		slog.Debug("MCP Authorization Policy: No rules configured")
 		return true, nil
@@ -445,7 +445,7 @@ func (p *McpAuthzPolicy) findMatchingRules(attributeType, attributeName, method 
 }
 
 // ruleGrantsAccess checks if a rule's claims and scopes are satisfied
-func (p *McpAuthzPolicy) ruleGrantsAccess(rule Rule, authCtx *policyv1alpha2.AuthContext) (bool, []string) {
+func (p *McpAuthzPolicy) ruleGrantsAccess(rule Rule, authCtx *policy.AuthContext) (bool, []string) {
 	// Check required claims
 	if len(rule.RequiredClaims) > 0 {
 		if !p.checkClaims(rule.RequiredClaims, authCtx) {
@@ -465,7 +465,7 @@ func (p *McpAuthzPolicy) ruleGrantsAccess(rule Rule, authCtx *policyv1alpha2.Aut
 }
 
 // checkClaims verifies that all required claims match their expected values in the AuthContext
-func (p *McpAuthzPolicy) checkClaims(requiredClaims map[string]string, authCtx *policyv1alpha2.AuthContext) bool {
+func (p *McpAuthzPolicy) checkClaims(requiredClaims map[string]string, authCtx *policy.AuthContext) bool {
 	for claimName, expectedValue := range requiredClaims {
 		switch claimName {
 		case "sub":
@@ -518,7 +518,7 @@ func (p *McpAuthzPolicy) checkClaims(requiredClaims map[string]string, authCtx *
 }
 
 // checkScopes verifies that all required scopes are present in the AuthContext
-func (p *McpAuthzPolicy) checkScopes(requiredScopes []string, authCtx *policyv1alpha2.AuthContext) (bool, []string) {
+func (p *McpAuthzPolicy) checkScopes(requiredScopes []string, authCtx *policy.AuthContext) (bool, []string) {
 	found := false
 	var matchedScope string
 	for _, required := range requiredScopes {

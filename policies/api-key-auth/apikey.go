@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	store "github.com/wso2/api-platform/common/apikey"
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -44,26 +44,26 @@ var ins = &APIKeyPolicy{}
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return ins, nil
 }
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *APIKeyPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *APIKeyPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -112,7 +112,7 @@ func extractQueryParam(path, param string) string {
 // OnRequestHeaders implements v1alpha2.RequestHeaderPolicy.
 // It performs API key authentication in the request-header phase, allowing the
 // kernel to short-circuit before any body buffering occurs.
-func (p *APIKeyPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *APIKeyPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	if errResp := p.authenticate(ctx.SharedContext, ctx.Headers, ctx.Path, ctx.Method, params); errResp != nil {
 		return *errResp
 	}
@@ -120,7 +120,7 @@ func (p *APIKeyPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext
 	keyName, _ := params["key"].(string)
 	location, _ := params["in"].(string)
 
-	mods := policyv1alpha2.UpstreamRequestHeaderModifications{}
+	mods := policy.UpstreamRequestHeaderModifications{}
 	if location == "header" {
 		mods.HeadersToRemove = []string{http.CanonicalHeaderKey(keyName)}
 	} else if location == "query" {
@@ -133,11 +133,11 @@ func (p *APIKeyPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext
 // It extracts and validates the API key, sets SharedContext.AuthContext, and returns
 // nil on success or an *ImmediateResponse on failure.
 func (p *APIKeyPolicy) authenticate(
-	shared *policyv1alpha2.SharedContext,
-	headers *policyv1alpha2.Headers,
+	shared *policy.SharedContext,
+	headers *policy.Headers,
 	path, method string,
 	params map[string]interface{},
-) *policyv1alpha2.ImmediateResponse {
+) *policy.ImmediateResponse {
 	slog.Debug("API Key Auth Policy: authenticate started",
 		"path", path,
 		"method", method,
@@ -220,7 +220,7 @@ func (p *APIKeyPolicy) authenticate(
 	}
 
 	slog.Debug("API Key Auth Policy: Authentication successful")
-	shared.AuthContext = &policyv1alpha2.AuthContext{
+	shared.AuthContext = &policy.AuthContext{
 		Authenticated: true,
 		AuthType:      AuthType,
 		Previous:      shared.AuthContext,
@@ -228,15 +228,15 @@ func (p *APIKeyPolicy) authenticate(
 	return nil
 }
 
-// failAuth sets the auth context to unauthenticated and returns a policyv1alpha2.ImmediateResponse.
-func (p *APIKeyPolicy) failAuth(shared *policyv1alpha2.SharedContext, statusCode int, errorFormat, errorMessage, reason string) *policyv1alpha2.ImmediateResponse {
-	shared.AuthContext = &policyv1alpha2.AuthContext{
+// failAuth sets the auth context to unauthenticated and returns a policy.ImmediateResponse.
+func (p *APIKeyPolicy) failAuth(shared *policy.SharedContext, statusCode int, errorFormat, errorMessage, reason string) *policy.ImmediateResponse {
+	shared.AuthContext = &policy.AuthContext{
 		Authenticated: false,
 		AuthType:      AuthType,
 		Previous:      shared.AuthContext,
 	}
 	v1resp := p.buildErrorResponse(statusCode, errorFormat, errorMessage, reason)
-	return &policyv1alpha2.ImmediateResponse{
+	return &policy.ImmediateResponse{
 		StatusCode: v1resp.StatusCode,
 		Headers:    v1resp.Headers,
 		Body:       v1resp.Body,
@@ -244,7 +244,7 @@ func (p *APIKeyPolicy) failAuth(shared *policyv1alpha2.SharedContext, statusCode
 }
 
 // buildErrorResponse constructs the ImmediateResponse body and headers for an auth failure.
-func (p *APIKeyPolicy) buildErrorResponse(statusCode int, errorFormat, errorMessage, reason string) policyv1alpha2.ImmediateResponse {
+func (p *APIKeyPolicy) buildErrorResponse(statusCode int, errorFormat, errorMessage, reason string) policy.ImmediateResponse {
 	headers := map[string]string{"content-type": "application/json"}
 
 	var body string
@@ -268,7 +268,7 @@ func (p *APIKeyPolicy) buildErrorResponse(statusCode int, errorFormat, errorMess
 		"reason", reason,
 	)
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
 		Body:       []byte(body),

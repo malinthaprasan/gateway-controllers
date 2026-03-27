@@ -28,7 +28,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	ratelimit "github.com/wso2/gateway-controllers/policies/advanced-ratelimit"
 )
 
@@ -41,17 +41,17 @@ const (
 // TokenBasedRateLimitPolicy delegates LLM token-based rate limiting to advanced-ratelimit
 // by dynamically resolving cost extraction paths from provider templates.
 type TokenBasedRateLimitPolicy struct {
-	metadata          policyv1alpha2.PolicyMetadata
-	delegates         sync.Map           // map[string]policyv1alpha2.Policy (providerName -> advanced-ratelimit instance)
+	metadata          policy.PolicyMetadata
+	delegates         sync.Map           // map[string]policy.Policy (providerName -> advanced-ratelimit instance)
 	delegateCacheKeys sync.Map           // map[string]string (providerName -> cacheKey for template change detection)
 	sf                singleflight.Group // prevents duplicate delegate creation
 }
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return &TokenBasedRateLimitPolicy{
 		metadata: metadata,
 	}, nil
@@ -59,18 +59,18 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *TokenBasedRateLimitPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeBuffer,
+func (p *TokenBasedRateLimitPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeProcess,
+		ResponseBodyMode:   policy.BodyModeBuffer,
 	}
 }
 
@@ -80,13 +80,13 @@ func (p *TokenBasedRateLimitPolicy) Mode() policyv1alpha2.ProcessingMode {
 // simultaneously. Only one goroutine performs the expensive creation, and others wait
 // for the result. The delegate is cached with a key that includes a hash of the template,
 // so when the template changes, a new delegate is created automatically.
-func (p *TokenBasedRateLimitPolicy) resolveDelegate(providerName string, params map[string]interface{}) (policyv1alpha2.Policy, error) {
+func (p *TokenBasedRateLimitPolicy) resolveDelegate(providerName string, params map[string]interface{}) (policy.Policy, error) {
 	slog.Debug("resolveDelegate: checking for existing delegate",
 		"route", p.metadata.RouteName,
 		"provider", providerName)
 
 	// Get the template to compute the cache key
-	store := policyv1alpha2.GetLazyResourceStoreInstance()
+	store := policy.GetLazyResourceStoreInstance()
 
 	// 1. Get Provider-to-Template Mapping
 	mappingResource, err := store.GetResourceByIDAndType(providerName, ResourceTypeProviderTemplateMapping)
@@ -154,7 +154,7 @@ func (p *TokenBasedRateLimitPolicy) resolveDelegate(providerName string, params 
 					"route", p.metadata.RouteName,
 					"provider", providerName,
 					"templateHash", templateHash[:8])
-				return existingDelegate.(policyv1alpha2.Policy), nil
+				return existingDelegate.(policy.Policy), nil
 			}
 			// Template changed - continue to create new delegate
 			slog.Debug("resolveDelegate: template changed, creating new delegate",
@@ -176,7 +176,7 @@ func (p *TokenBasedRateLimitPolicy) resolveDelegate(providerName string, params 
 						"route", p.metadata.RouteName,
 						"provider", providerName,
 						"templateHash", templateHash[:8])
-					return existingDelegate.(policyv1alpha2.Policy), nil
+					return existingDelegate.(policy.Policy), nil
 				}
 			}
 		}
@@ -212,12 +212,12 @@ func (p *TokenBasedRateLimitPolicy) resolveDelegate(providerName string, params 
 	if err != nil {
 		return nil, err
 	}
-	return result.(policyv1alpha2.Policy), nil
+	return result.(policy.Policy), nil
 }
 
 // createDelegateWithTemplate creates a delegate using the provided template (already fetched).
 // This avoids double-fetching the template when called from resolveDelegate.
-func (p *TokenBasedRateLimitPolicy) createDelegateWithTemplate(providerName string, params map[string]interface{}, template map[string]interface{}) (policyv1alpha2.Policy, error) {
+func (p *TokenBasedRateLimitPolicy) createDelegateWithTemplate(providerName string, params map[string]interface{}, template map[string]interface{}) (policy.Policy, error) {
 	// Transform LLM limits into advanced-ratelimit parameters
 	rlParams := transformToRatelimitParams(params, template)
 
@@ -392,18 +392,18 @@ func convertLimits(rawLimits interface{}) []interface{} {
 // If no delegate exists yet (first request for this provider), it creates one via resolveDelegate
 // so that quota keys are stored in metadata for the response phase.
 func (p *TokenBasedRateLimitPolicy) OnRequestHeaders(
-	ctx *policyv1alpha2.RequestHeaderContext,
+	ctx *policy.RequestHeaderContext,
 	params map[string]interface{},
-) policyv1alpha2.RequestHeaderAction {
+) policy.RequestHeaderAction {
 	type requestHeaderPolicer interface {
-		OnRequestHeaders(*policyv1alpha2.RequestHeaderContext, map[string]interface{}) policyv1alpha2.RequestHeaderAction
+		OnRequestHeaders(*policy.RequestHeaderContext, map[string]interface{}) policy.RequestHeaderAction
 	}
 
 	providerName, ok := ctx.SharedContext.Metadata[MetadataKeyProviderName].(string)
 	if !ok || providerName == "" {
 		slog.Debug("OnRequestHeaders: provider name not found in metadata; skipping token-based rate limit",
 			"route", p.metadata.RouteName)
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
 
 	delegate, err := p.resolveDelegate(providerName, params)
@@ -412,28 +412,28 @@ func (p *TokenBasedRateLimitPolicy) OnRequestHeaders(
 			"route", p.metadata.RouteName,
 			"provider", providerName,
 			"error", err)
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
 
 	if delegate == nil {
 		slog.Warn("OnRequestHeaders: delegate is nil for provider",
 			"route", p.metadata.RouteName,
 			"provider", providerName)
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
 
 	if rl, ok := delegate.(requestHeaderPolicer); ok {
 		return rl.OnRequestHeaders(ctx, params)
 	}
 
-	return policyv1alpha2.UpstreamRequestHeaderModifications{}
+	return policy.UpstreamRequestHeaderModifications{}
 }
 
 // OnRequestBody processes the request body phase by delegating to a provider-specific ratelimit instance.
 func (p *TokenBasedRateLimitPolicy) OnRequestBody(
-	ctx *policyv1alpha2.RequestContext,
+	ctx *policy.RequestContext,
 	params map[string]interface{},
-) policyv1alpha2.RequestAction {
+) policy.RequestAction {
 	slog.Debug("OnRequestBody: processing token-based rate limit",
 		"route", p.metadata.RouteName)
 
@@ -469,7 +469,7 @@ func (p *TokenBasedRateLimitPolicy) OnRequestBody(
 		"provider", providerName)
 
 	type requestBodyPolicer interface {
-		OnRequestBody(*policyv1alpha2.RequestContext, map[string]interface{}) policyv1alpha2.RequestAction
+		OnRequestBody(*policy.RequestContext, map[string]interface{}) policy.RequestAction
 	}
 	if rl, ok := delegate.(requestBodyPolicer); ok {
 		return rl.OnRequestBody(ctx, nil)
@@ -481,18 +481,18 @@ func (p *TokenBasedRateLimitPolicy) OnRequestBody(
 // OnResponseHeaders delegates to the provider-specific ratelimit instance's OnResponseHeaders
 // if a delegate is already cached for the provider.
 func (p *TokenBasedRateLimitPolicy) OnResponseHeaders(
-	ctx *policyv1alpha2.ResponseHeaderContext,
+	ctx *policy.ResponseHeaderContext,
 	params map[string]interface{},
-) policyv1alpha2.ResponseHeaderAction {
+) policy.ResponseHeaderAction {
 	type responseHeaderPolicer interface {
-		OnResponseHeaders(*policyv1alpha2.ResponseHeaderContext, map[string]interface{}) policyv1alpha2.ResponseHeaderAction
+		OnResponseHeaders(*policy.ResponseHeaderContext, map[string]interface{}) policy.ResponseHeaderAction
 	}
 
 	providerName, ok := ctx.Metadata[MetadataKeyProviderName].(string)
 	if !ok || providerName == "" {
 		slog.Debug("OnResponseHeaders: provider name not found in metadata; skipping token-based rate limit",
 			"route", p.metadata.RouteName)
-		return policyv1alpha2.DownstreamResponseHeaderModifications{}
+		return policy.DownstreamResponseHeaderModifications{}
 	}
 
 	if delegate, ok := p.delegates.Load(providerName); ok {
@@ -501,14 +501,14 @@ func (p *TokenBasedRateLimitPolicy) OnResponseHeaders(
 		}
 	}
 
-	return policyv1alpha2.DownstreamResponseHeaderModifications{}
+	return policy.DownstreamResponseHeaderModifications{}
 }
 
 // OnResponseBody processes the response body phase by delegating to the provider-specific instance.
 func (p *TokenBasedRateLimitPolicy) OnResponseBody(
-	ctx *policyv1alpha2.ResponseContext,
+	ctx *policy.ResponseContext,
 	_ map[string]interface{},
-) policyv1alpha2.ResponseAction {
+) policy.ResponseAction {
 	slog.Debug("OnResponseBody: processing token-based rate limit",
 		"route", p.metadata.RouteName)
 
@@ -528,7 +528,7 @@ func (p *TokenBasedRateLimitPolicy) OnResponseBody(
 			"route", p.metadata.RouteName,
 			"provider", providerName)
 		type responseBodyPolicer interface {
-			OnResponseBody(*policyv1alpha2.ResponseContext, map[string]interface{}) policyv1alpha2.ResponseAction
+			OnResponseBody(*policy.ResponseContext, map[string]interface{}) policy.ResponseAction
 		}
 		if rl, ok := delegate.(responseBodyPolicer); ok {
 			return rl.OnResponseBody(ctx, nil)

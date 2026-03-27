@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	policyenginev1 "github.com/wso2/api-platform/sdk/core/gateway/policyengine/v1"
 )
 
@@ -83,9 +83,9 @@ func runRateLimitCleaner() {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &SubscriptionValidationPolicy{
 		cfg:         mergeConfig(ins.cfg, params),
 		store:       ins.store,
@@ -97,9 +97,9 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
@@ -197,30 +197,30 @@ func stripCookie(cookieHeaderValues []string, cookieName string) (string, bool) 
 }
 
 // Mode returns the processing mode for this policy.
-func (p *SubscriptionValidationPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *SubscriptionValidationPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
 // OnRequestHeaders validates the subscription in the request header phase.
-func (p *SubscriptionValidationPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *SubscriptionValidationPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	if ctx == nil || ctx.SharedContext == nil {
-		return p.forbiddenResponse("request context is missing").(policyv1alpha2.ImmediateResponse)
+		return p.forbiddenResponse("request context is missing").(policy.ImmediateResponse)
 	}
 
 	apiID := ctx.SharedContext.APIId
 	if strings.TrimSpace(apiID) == "" {
 		slog.Error("subscriptionValidation: APIId is empty in SharedContext; failing validation")
-		return p.forbiddenResponse("API id is missing").(policyv1alpha2.ImmediateResponse)
+		return p.forbiddenResponse("API id is missing").(policy.ImmediateResponse)
 	}
 
 	if p.store == nil {
 		slog.Error("subscriptionValidation: subscription store is not initialized")
-		return p.forbiddenResponse("subscription store is not available").(policyv1alpha2.ImmediateResponse)
+		return p.forbiddenResponse("subscription store is not available").(policy.ImmediateResponse)
 	}
 
 	if ctx.Headers != nil {
@@ -230,11 +230,11 @@ func (p *SubscriptionValidationPolicy) OnRequestHeaders(ctx *policyv1alpha2.Requ
 			if token != "" {
 				result := p.validateByToken(apiID, token)
 				if result == nil {
-					return policyv1alpha2.UpstreamRequestHeaderModifications{
+					return policy.UpstreamRequestHeaderModifications{
 						HeadersToRemove: []string{normalizeHeaderName(p.cfg.SubscriptionKeyHeader)},
 					}
 				}
-				return result.(policyv1alpha2.ImmediateResponse)
+				return result.(policy.ImmediateResponse)
 			}
 		}
 		if p.cfg.SubscriptionKeyCookie != "" {
@@ -245,17 +245,17 @@ func (p *SubscriptionValidationPolicy) OnRequestHeaders(ctx *policyv1alpha2.Requ
 					updated, removed := stripCookie(cookieValues, p.cfg.SubscriptionKeyCookie)
 					if removed {
 						if updated == "" {
-							return policyv1alpha2.UpstreamRequestHeaderModifications{
+							return policy.UpstreamRequestHeaderModifications{
 								HeadersToRemove: []string{"cookie"},
 							}
 						}
-						return policyv1alpha2.UpstreamRequestHeaderModifications{
+						return policy.UpstreamRequestHeaderModifications{
 							HeadersToSet: map[string]string{"cookie": updated},
 						}
 					}
-					return policyv1alpha2.UpstreamRequestHeaderModifications{}
+					return policy.UpstreamRequestHeaderModifications{}
 				}
-				return result.(policyv1alpha2.ImmediateResponse)
+				return result.(policy.ImmediateResponse)
 			}
 		}
 	}
@@ -267,18 +267,18 @@ func (p *SubscriptionValidationPolicy) OnRequestHeaders(ctx *policyv1alpha2.Requ
 			if appID != "" {
 				result := p.validateByApplication(apiID, appID)
 				if result == nil {
-					return policyv1alpha2.UpstreamRequestHeaderModifications{}
+					return policy.UpstreamRequestHeaderModifications{}
 				}
-				return result.(policyv1alpha2.ImmediateResponse)
+				return result.(policy.ImmediateResponse)
 			}
 		}
 	}
 
-	return p.forbiddenResponse("no subscription token or application identity provided").(policyv1alpha2.ImmediateResponse)
+	return p.forbiddenResponse("no subscription token or application identity provided").(policy.ImmediateResponse)
 }
 
 // forbiddenResponse constructs an ImmediateResponse with status 403.
-func (p *SubscriptionValidationPolicy) forbiddenResponse(detail string) policyv1alpha2.RequestAction {
+func (p *SubscriptionValidationPolicy) forbiddenResponse(detail string) policy.RequestAction {
 	message := forbiddenMessage
 	if detail != "" {
 		message = fmt.Sprintf("%s: %s", message, detail)
@@ -293,7 +293,7 @@ func (p *SubscriptionValidationPolicy) forbiddenResponse(detail string) policyv1
 		body = []byte(`{"error":"forbidden","message":"subscription validation failed"}`)
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: forbiddenStatusCode,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -304,7 +304,7 @@ func (p *SubscriptionValidationPolicy) forbiddenResponse(detail string) policyv1
 
 // validateByToken checks the token against the store, then enforces rate limits.
 // The store uses hashed tokens; we hash the incoming token before lookup.
-func (p *SubscriptionValidationPolicy) validateByToken(apiID, token string) policyv1alpha2.RequestAction {
+func (p *SubscriptionValidationPolicy) validateByToken(apiID, token string) policy.RequestAction {
 	hashedToken := policyenginev1.HashSubscriptionToken(token)
 	active, entry := p.store.IsActiveByToken(apiID, hashedToken)
 	if !active {
@@ -323,7 +323,7 @@ func (p *SubscriptionValidationPolicy) validateByToken(apiID, token string) poli
 }
 
 // checkRateLimit enforces the plan's throttle limit for the given token.
-func (p *SubscriptionValidationPolicy) checkRateLimit(apiID, token string, entry *policyenginev1.SubscriptionEntry) policyv1alpha2.RequestAction {
+func (p *SubscriptionValidationPolicy) checkRateLimit(apiID, token string, entry *policyenginev1.SubscriptionEntry) policy.RequestAction {
 	window := windowDuration(entry.ThrottleLimitUnit)
 	if window == 0 {
 		return nil
@@ -364,7 +364,7 @@ func (p *SubscriptionValidationPolicy) checkRateLimit(apiID, token string, entry
 
 // validateByApplication checks the application ID against the store, then enforces rate limits.
 // This is the legacy path; it now recovers quota/throttle metadata from the store.
-func (p *SubscriptionValidationPolicy) validateByApplication(apiID, appID string) policyv1alpha2.RequestAction {
+func (p *SubscriptionValidationPolicy) validateByApplication(apiID, appID string) policy.RequestAction {
 	active, entry := p.store.IsActiveByApplication(apiID, appID)
 	if !active {
 		slog.Info("subscriptionValidation: no active subscription found (appId fallback)",
@@ -384,7 +384,7 @@ func (p *SubscriptionValidationPolicy) validateByApplication(apiID, appID string
 
 // getCookieValue parses the Cookie header and returns the value for the given cookie name.
 // Returns empty string if the cookie is not found or Cookie header is missing.
-func getCookieValue(headers *policyv1alpha2.Headers, name string) string {
+func getCookieValue(headers *policy.Headers, name string) string {
 	if headers == nil || name == "" {
 		return ""
 	}
@@ -413,7 +413,7 @@ func getCookieValue(headers *policyv1alpha2.Headers, name string) string {
 }
 
 // rateLimitResponse constructs a 429 Too Many Requests response.
-func (p *SubscriptionValidationPolicy) rateLimitResponse(limit, remaining int, resetAt time.Time, window time.Duration) policyv1alpha2.RequestAction {
+func (p *SubscriptionValidationPolicy) rateLimitResponse(limit, remaining int, resetAt time.Time, window time.Duration) policy.RequestAction {
 	payload := map[string]interface{}{
 		"error":   "rate_limit_exceeded",
 		"message": fmt.Sprintf("Subscription quota exceeded: %d requests per %s", limit, entryThrottleUnitString(window)),
@@ -438,7 +438,7 @@ func (p *SubscriptionValidationPolicy) rateLimitResponse(limit, remaining int, r
 	}
 	policyValue := fmt.Sprintf("%d;w=%d", limit, windowSeconds)
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: 429,
 		Headers: map[string]string{
 			"Content-Type": "application/json",

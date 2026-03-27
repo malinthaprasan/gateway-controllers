@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 // RemoveHeadersPolicy implements header removal for both request and response
@@ -31,26 +31,26 @@ var ins = &RemoveHeadersPolicy{}
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return ins, nil
 }
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *RemoveHeadersPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *RemoveHeadersPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeProcess,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -186,31 +186,31 @@ func (p *RemoveHeadersPolicy) parseHeaderNames(headersRaw interface{}) []string 
 }
 
 // OnRequestHeaders removes headers from the request in the header phase.
-func (p *RemoveHeadersPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *RemoveHeadersPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	requestHeadersRaw, ok, err := p.getPhaseHeaders(params, "request", "requestHeaders")
 	if err != nil || !ok {
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
 	headerNames := p.parseHeaderNames(requestHeadersRaw)
 	if len(headerNames) == 0 {
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
-	return policyv1alpha2.UpstreamRequestHeaderModifications{
+	return policy.UpstreamRequestHeaderModifications{
 		HeadersToRemove: headerNames,
 	}
 }
 
 // OnResponseHeaders removes headers from the response in the header phase.
-func (p *RemoveHeadersPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderContext, params map[string]interface{}) policyv1alpha2.ResponseHeaderAction {
+func (p *RemoveHeadersPolicy) OnResponseHeaders(ctx *policy.ResponseHeaderContext, params map[string]interface{}) policy.ResponseHeaderAction {
 	responseHeadersRaw, ok, err := p.getPhaseHeaders(params, "response", "responseHeaders")
 	if err != nil || !ok {
-		return policyv1alpha2.DownstreamResponseHeaderModifications{}
+		return policy.DownstreamResponseHeaderModifications{}
 	}
 	headerNames := p.parseHeaderNames(responseHeadersRaw)
 	if len(headerNames) == 0 {
-		return policyv1alpha2.DownstreamResponseHeaderModifications{}
+		return policy.DownstreamResponseHeaderModifications{}
 	}
-	return policyv1alpha2.DownstreamResponseHeaderModifications{
+	return policy.DownstreamResponseHeaderModifications{
 		HeadersToRemove: headerNames,
 	}
 }

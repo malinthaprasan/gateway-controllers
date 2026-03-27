@@ -24,7 +24,7 @@ import (
 	"log/slog"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -60,9 +60,9 @@ type sseEvent struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	slog.Debug("MCP Rewrite Policy: GetPolicy called")
 
 	ins := &McpRewritePolicy{}
@@ -103,9 +103,9 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
@@ -438,28 +438,28 @@ func isMcpPostRequest(method, path string) bool {
 	return strings.EqualFold(method, "POST") && strings.Contains(path, mcpPathSegment)
 }
 
-func (p *McpRewritePolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeBuffer,
+func (p *McpRewritePolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeSkip,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeBuffer,
 	}
 }
 
 // OnRequestBody applies rewrite rules to the MCP request body.
-func (p *McpRewritePolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]any) policyv1alpha2.RequestAction {
+func (p *McpRewritePolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]any) policy.RequestAction {
 	return p.processRequestBody(ctx)
 }
 
-func (p *McpRewritePolicy) processRequestBody(ctx *policyv1alpha2.RequestContext) policyv1alpha2.RequestAction {
+func (p *McpRewritePolicy) processRequestBody(ctx *policy.RequestContext) policy.RequestAction {
 	if !isMcpPostRequest(ctx.Method, ctx.Path) {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 	slog.Debug("MCP Rewrite Policy: OnRequest started")
 
 	if ctx.Body == nil || len(ctx.Body.Content) == 0 {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	requestPayload, requestEvents, requestEventIndex, err := parseRequestPayload(ctx.Body.Content, isEventStream(ctx.Headers))
@@ -473,7 +473,7 @@ func (p *McpRewritePolicy) processRequestBody(ctx *policyv1alpha2.RequestContext
 	method, _ := requestPayload["method"].(string)
 	capabilityType, action, ok := parseMcpMethod(method)
 	if !ok {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	if ctx.Metadata == nil {
@@ -483,12 +483,12 @@ func (p *McpRewritePolicy) processRequestBody(ctx *policyv1alpha2.RequestContext
 	ctx.Metadata[metadataMcpAction] = action
 
 	if !rewriteApplicable(capabilityType, action) {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	config := p.getCapabilityConfig(capabilityType)
 	if !config.Enabled {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	paramsRaw, ok := requestPayload["params"].(map[string]any)
@@ -531,14 +531,14 @@ func (p *McpRewritePolicy) processRequestBody(ctx *policyv1alpha2.RequestContext
 			updatedPayload = buildEventStream(requestEvents)
 		}
 		slog.Debug("MCP Rewrite Policy: Request rewritten", "capabilityType", capabilityType, "requestName", capabilityName, "targetName", entry.Target, "requestID", requestID)
-		return policyv1alpha2.UpstreamRequestModifications{Body: updatedPayload}
+		return policy.UpstreamRequestModifications{Body: updatedPayload}
 	}
 
-	return policyv1alpha2.UpstreamRequestModifications{}
+	return policy.UpstreamRequestModifications{}
 }
 
 // isEventStream reports whether v1alpha2 headers indicate an SSE payload.
-func isEventStream(headers *policyv1alpha2.Headers) bool {
+func isEventStream(headers *policy.Headers) bool {
 	if headers == nil {
 		return false
 	}
@@ -555,7 +555,7 @@ func isEventStream(headers *policyv1alpha2.Headers) bool {
 }
 
 // getSessionID extracts the MCP session ID from v1alpha2 headers.
-func getSessionID(headers *policyv1alpha2.Headers) string {
+func getSessionID(headers *policy.Headers) string {
 	if headers == nil {
 		return ""
 	}
@@ -570,7 +570,7 @@ func getSessionID(headers *policyv1alpha2.Headers) string {
 }
 
 // buildRequestErrorResponse builds a v1alpha2 error response for a request.
-func (p *McpRewritePolicy) buildRequestErrorResponse(headers *policyv1alpha2.Headers, statusCode int, jsonRpcCode int, reason string, requestID any) policyv1alpha2.RequestAction {
+func (p *McpRewritePolicy) buildRequestErrorResponse(headers *policy.Headers, statusCode int, jsonRpcCode int, reason string, requestID any) policy.RequestAction {
 	sessionID := getSessionID(headers)
 	if isEventStream(headers) {
 		return p.buildEventStreamErrorResponse(statusCode, jsonRpcCode, reason, requestID, sessionID)
@@ -579,7 +579,7 @@ func (p *McpRewritePolicy) buildRequestErrorResponse(headers *policyv1alpha2.Hea
 }
 
 // buildEventStreamErrorResponse builds a v1alpha2 SSE error response.
-func (p *McpRewritePolicy) buildEventStreamErrorResponse(statusCode int, jsonRpcCode int, reason string, requestID any, sessionID string) policyv1alpha2.RequestAction {
+func (p *McpRewritePolicy) buildEventStreamErrorResponse(statusCode int, jsonRpcCode int, reason string, requestID any, sessionID string) policy.RequestAction {
 	responseBody := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      requestID,
@@ -608,7 +608,7 @@ func (p *McpRewritePolicy) buildEventStreamErrorResponse(statusCode int, jsonRpc
 		headers[mcpSessionHeader] = sessionID
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
 		Body:       streamBody,
@@ -616,7 +616,7 @@ func (p *McpRewritePolicy) buildEventStreamErrorResponse(statusCode int, jsonRpc
 }
 
 // OnResponseBody applies rewrite rules to the MCP response body.
-func (p *McpRewritePolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _ map[string]any) policyv1alpha2.ResponseAction {
+func (p *McpRewritePolicy) OnResponseBody(ctx *policy.ResponseContext, _ map[string]any) policy.ResponseAction {
 	if !isMcpPostRequest(ctx.RequestMethod, ctx.RequestPath) {
 		return nil
 	}
@@ -689,7 +689,7 @@ func (p *McpRewritePolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _
 		if !updated {
 			return nil
 		}
-		return policyv1alpha2.DownstreamResponseModifications{
+		return policy.DownstreamResponseModifications{
 			Body: buildEventStream(events),
 		}
 	}
@@ -731,13 +731,13 @@ func (p *McpRewritePolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _
 		return nil
 	}
 
-	return policyv1alpha2.DownstreamResponseModifications{
+	return policy.DownstreamResponseModifications{
 		Body: updatedPayload,
 	}
 }
 
 // buildErrorResponse builds a v1alpha2 JSON error response.
-func (p *McpRewritePolicy) buildErrorResponse(statusCode int, jsonRpcCode int, reason string, requestID any, sessionID string) policyv1alpha2.RequestAction {
+func (p *McpRewritePolicy) buildErrorResponse(statusCode int, jsonRpcCode int, reason string, requestID any, sessionID string) policy.RequestAction {
 	responseBody := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      requestID,
@@ -763,7 +763,7 @@ func (p *McpRewritePolicy) buildErrorResponse(statusCode int, jsonRpcCode int, r
 		headers[mcpSessionHeader] = sessionID
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
 		Body:       body,

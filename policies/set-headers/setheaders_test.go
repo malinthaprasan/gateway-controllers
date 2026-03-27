@@ -21,20 +21,20 @@ import (
 	"strings"
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 // Helper function to create test headers
-func createTestHeaders(headers map[string]string) *policyv1alpha2.Headers {
+func createTestHeaders(headers map[string]string) *policy.Headers {
 	headerMap := make(map[string][]string)
 	for k, v := range headers {
 		headerMap[k] = []string{v}
 	}
-	return policyv1alpha2.NewHeaders(headerMap)
+	return policy.NewHeaders(headerMap)
 }
 
 func TestGetPolicy(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{}
+	metadata := policy.PolicyMetadata{}
 	params := map[string]interface{}{}
 
 	p, err := GetPolicy(metadata, params)
@@ -53,8 +53,8 @@ func TestGetPolicy(t *testing.T) {
 
 func TestSetHeadersPolicy_OnRequestHeaders_NoHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -68,7 +68,7 @@ func TestSetHeadersPolicy_OnRequestHeaders_NoHeaders(t *testing.T) {
 	result := p.OnRequestHeaders(ctx, params)
 
 	// Should return empty modifications
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -80,8 +80,8 @@ func TestSetHeadersPolicy_OnRequestHeaders_NoHeaders(t *testing.T) {
 
 func TestSetHeadersPolicy_OnRequestHeaders_SingleHeader(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -101,7 +101,7 @@ func TestSetHeadersPolicy_OnRequestHeaders_SingleHeader(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -119,8 +119,8 @@ func TestSetHeadersPolicy_OnRequestHeaders_SingleHeader(t *testing.T) {
 
 func TestSetHeadersPolicy_OnRequestHeaders_MultipleHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -148,7 +148,7 @@ func TestSetHeadersPolicy_OnRequestHeaders_MultipleHeaders(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -173,8 +173,8 @@ func TestSetHeadersPolicy_OnRequestHeaders_MultipleHeaders(t *testing.T) {
 
 func TestSetHeadersPolicy_OnRequestHeaders_HeaderNameNormalization(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -192,7 +192,7 @@ func TestSetHeadersPolicy_OnRequestHeaders_HeaderNameNormalization(t *testing.T)
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -206,8 +206,8 @@ func TestSetHeadersPolicy_OnRequestHeaders_HeaderNameNormalization(t *testing.T)
 
 func TestSetHeadersPolicy_OnResponseHeaders_NoHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.ResponseHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.ResponseHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -221,7 +221,7 @@ func TestSetHeadersPolicy_OnResponseHeaders_NoHeaders(t *testing.T) {
 	result := p.OnResponseHeaders(ctx, params)
 
 	// Should return empty modifications
-	mods, ok := result.(policyv1alpha2.DownstreamResponseHeaderModifications)
+	mods, ok := result.(policy.DownstreamResponseHeaderModifications)
 	if !ok {
 		t.Errorf("Expected DownstreamResponseHeaderModifications, got %T", result)
 	}
@@ -233,8 +233,8 @@ func TestSetHeadersPolicy_OnResponseHeaders_NoHeaders(t *testing.T) {
 
 func TestSetHeadersPolicy_OnResponseHeaders_SingleHeader(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.ResponseHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.ResponseHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -254,7 +254,7 @@ func TestSetHeadersPolicy_OnResponseHeaders_SingleHeader(t *testing.T) {
 
 	result := p.OnResponseHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.DownstreamResponseHeaderModifications)
+	mods, ok := result.(policy.DownstreamResponseHeaderModifications)
 	if !ok {
 		t.Errorf("Expected DownstreamResponseHeaderModifications, got %T", result)
 	}
@@ -272,8 +272,8 @@ func TestSetHeadersPolicy_OnResponseHeaders_SingleHeader(t *testing.T) {
 
 func TestSetHeadersPolicy_OnResponseHeaders_MultipleHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.ResponseHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.ResponseHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -301,7 +301,7 @@ func TestSetHeadersPolicy_OnResponseHeaders_MultipleHeaders(t *testing.T) {
 
 	result := p.OnResponseHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.DownstreamResponseHeaderModifications)
+	mods, ok := result.(policy.DownstreamResponseHeaderModifications)
 	if !ok {
 		t.Errorf("Expected DownstreamResponseHeaderModifications, got %T", result)
 	}
@@ -328,8 +328,8 @@ func TestSetHeadersPolicy_BothRequestAndResponse(t *testing.T) {
 	p := &SetHeadersPolicy{}
 
 	// Test request phase
-	reqCtx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	reqCtx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -352,7 +352,7 @@ func TestSetHeadersPolicy_BothRequestAndResponse(t *testing.T) {
 	}
 
 	reqResult := p.OnRequestHeaders(reqCtx, params)
-	reqMods, ok := reqResult.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	reqMods, ok := reqResult.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", reqResult)
 	}
@@ -362,8 +362,8 @@ func TestSetHeadersPolicy_BothRequestAndResponse(t *testing.T) {
 	}
 
 	// Test response phase
-	respCtx := &policyv1alpha2.ResponseHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	respCtx := &policy.ResponseHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -371,7 +371,7 @@ func TestSetHeadersPolicy_BothRequestAndResponse(t *testing.T) {
 	}
 
 	respResult := p.OnResponseHeaders(respCtx, params)
-	respMods, ok := respResult.(policyv1alpha2.DownstreamResponseHeaderModifications)
+	respMods, ok := respResult.(policy.DownstreamResponseHeaderModifications)
 	if !ok {
 		t.Errorf("Expected DownstreamResponseHeaderModifications, got %T", respResult)
 	}
@@ -383,8 +383,8 @@ func TestSetHeadersPolicy_BothRequestAndResponse(t *testing.T) {
 
 func TestSetHeadersPolicy_EmptyHeadersList(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -397,7 +397,7 @@ func TestSetHeadersPolicy_EmptyHeadersList(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -409,8 +409,8 @@ func TestSetHeadersPolicy_EmptyHeadersList(t *testing.T) {
 
 func TestSetHeadersPolicy_InvalidHeadersType(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -423,7 +423,7 @@ func TestSetHeadersPolicy_InvalidHeadersType(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -435,8 +435,8 @@ func TestSetHeadersPolicy_InvalidHeadersType(t *testing.T) {
 
 func TestSetHeadersPolicy_InvalidHeaderEntry(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -455,7 +455,7 @@ func TestSetHeadersPolicy_InvalidHeaderEntry(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -472,8 +472,8 @@ func TestSetHeadersPolicy_InvalidHeaderEntry(t *testing.T) {
 
 func TestSetHeadersPolicy_SpecialCharactersInValues(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -491,7 +491,7 @@ func TestSetHeadersPolicy_SpecialCharactersInValues(t *testing.T) {
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -506,8 +506,8 @@ func TestSetHeadersPolicy_SpecialCharactersInValues(t *testing.T) {
 // Test the key difference: overwrite behavior when same header name appears multiple times
 func TestSetHeadersPolicy_MultipleHeadersSameName_OverwriteBehavior(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -535,7 +535,7 @@ func TestSetHeadersPolicy_MultipleHeadersSameName_OverwriteBehavior(t *testing.T
 
 	result := p.OnRequestHeaders(ctx, params)
 
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -700,8 +700,8 @@ func TestSetHeadersPolicy_Validate_BothInvalid(t *testing.T) {
 
 func TestSetHeadersPolicy_OnRequestHeaders_NestedHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -720,7 +720,7 @@ func TestSetHeadersPolicy_OnRequestHeaders_NestedHeaders(t *testing.T) {
 	}
 
 	result := p.OnRequestHeaders(ctx, params)
-	mods, ok := result.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := result.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications, got %T", result)
 	}
@@ -732,8 +732,8 @@ func TestSetHeadersPolicy_OnRequestHeaders_NestedHeaders(t *testing.T) {
 
 func TestSetHeadersPolicy_OnResponseHeaders_NestedHeaders(t *testing.T) {
 	p := &SetHeadersPolicy{}
-	ctx := &policyv1alpha2.ResponseHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.ResponseHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "req-1",
 			Metadata:  map[string]interface{}{},
 		},
@@ -752,7 +752,7 @@ func TestSetHeadersPolicy_OnResponseHeaders_NestedHeaders(t *testing.T) {
 	}
 
 	result := p.OnResponseHeaders(ctx, params)
-	mods, ok := result.(policyv1alpha2.DownstreamResponseHeaderModifications)
+	mods, ok := result.(policy.DownstreamResponseHeaderModifications)
 	if !ok {
 		t.Errorf("Expected DownstreamResponseHeaderModifications, got %T", result)
 	}

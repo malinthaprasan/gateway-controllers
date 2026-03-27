@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
@@ -66,9 +66,9 @@ type PromptDecoratorPolicyParams struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &PromptDecoratorPolicy{}
 
 	// Parse parameters
@@ -85,19 +85,19 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
 // Mode returns the processing mode for the prompt decorator policy.
-func (p *PromptDecoratorPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *PromptDecoratorPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -287,11 +287,11 @@ func (p *PromptDecoratorPolicy) setValueAtPath(current interface{}, key string, 
 }
 
 // OnRequestBody decorates the request body.
-func (p *PromptDecoratorPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *PromptDecoratorPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	return p.processRequestBody(ctx)
 }
 
-func (p *PromptDecoratorPolicy) processRequestBody(ctx *policyv1alpha2.RequestContext) policyv1alpha2.RequestAction {
+func (p *PromptDecoratorPolicy) processRequestBody(ctx *policy.RequestContext) policy.RequestAction {
 	var content []byte
 	if ctx.Body != nil {
 		content = ctx.Body.Content
@@ -424,7 +424,7 @@ func (p *PromptDecoratorPolicy) processRequestBody(ctx *policyv1alpha2.RequestCo
 	}
 }
 
-func (p *PromptDecoratorPolicy) buildErrorResponse(reason string, validationError error) policyv1alpha2.RequestAction {
+func (p *PromptDecoratorPolicy) buildErrorResponse(reason string, validationError error) policy.RequestAction {
 	errorMessage := reason
 	if validationError != nil {
 		errorMessage = fmt.Sprintf("%s: %v", reason, validationError)
@@ -440,7 +440,7 @@ func (p *PromptDecoratorPolicy) buildErrorResponse(reason string, validationErro
 		bodyBytes = []byte(`{"type":"PROMPT_DECORATOR_ERROR","message":"Internal error"}`)
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: 500,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -449,7 +449,7 @@ func (p *PromptDecoratorPolicy) buildErrorResponse(reason string, validationErro
 	}
 }
 
-func (p *PromptDecoratorPolicy) updateArrayAtPath(payloadData map[string]interface{}, jsonPath string, value []map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *PromptDecoratorPolicy) updateArrayAtPath(payloadData map[string]interface{}, jsonPath string, value []map[string]interface{}) policy.RequestAction {
 	path := jsonPath
 	if strings.HasPrefix(path, "$.") {
 		path = strings.TrimPrefix(path, "$.")
@@ -490,12 +490,12 @@ func (p *PromptDecoratorPolicy) updateArrayAtPath(payloadData map[string]interfa
 		return p.buildErrorResponse("Error marshaling updated JSON payload", err)
 	}
 
-	return policyv1alpha2.UpstreamRequestModifications{
+	return policy.UpstreamRequestModifications{
 		Body: updatedPayload,
 	}
 }
 
-func (p *PromptDecoratorPolicy) updateStringAtPath(payloadData map[string]interface{}, jsonPath string, value string) policyv1alpha2.RequestAction {
+func (p *PromptDecoratorPolicy) updateStringAtPath(payloadData map[string]interface{}, jsonPath string, value string) policy.RequestAction {
 	path := jsonPath
 	if strings.HasPrefix(path, "$.") {
 		path = strings.TrimPrefix(path, "$.")
@@ -530,7 +530,7 @@ func (p *PromptDecoratorPolicy) updateStringAtPath(payloadData map[string]interf
 		return p.buildErrorResponse("Error marshaling updated JSON payload", err)
 	}
 
-	return policyv1alpha2.UpstreamRequestModifications{
+	return policy.UpstreamRequestModifications{
 		Body: updatedPayload,
 	}
 }

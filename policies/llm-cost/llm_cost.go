@@ -22,7 +22,7 @@ import (
 	"log/slog"
 	"sync"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -53,9 +53,9 @@ var (
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	_ policyv1alpha2.PolicyMetadata,
+	_ policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	instanceOnce.Do(func() {
 		pricingFile, _ := params["pricing_file"].(string)
 		if pricingFile == "" {
@@ -75,9 +75,9 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
@@ -86,16 +86,16 @@ func GetPolicyV2(
 //     in OnResponseBody (needed for Anthropic speed parameter).
 //   - ResponseBodyMode=Buffer: buffer the full response body so we can parse
 //     the usage object and model name.
-func (p *LLMCostPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestBodyMode:  policyv1alpha2.BodyModeBuffer,
-		ResponseBodyMode: policyv1alpha2.BodyModeBuffer,
+func (p *LLMCostPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestBodyMode:  policy.BodyModeBuffer,
+		ResponseBodyMode: policy.BodyModeBuffer,
 	}
 }
 
 // OnResponseBody reads the LLM response, looks up model pricing, calculates cost,
 // and stores the result in SharedContext.Metadata.
-func (p *LLMCostPolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _ map[string]interface{}) policyv1alpha2.ResponseAction {
+func (p *LLMCostPolicy) OnResponseBody(ctx *policy.ResponseContext, _ map[string]interface{}) policy.ResponseAction {
 	if ctx.ResponseBody == nil || !ctx.ResponseBody.Present || len(ctx.ResponseBody.Content) == 0 {
 		slog.Warn("llm-cost: empty or missing response body, skipping cost calculation")
 		return setCostMetadata(ctx, 0.0, costStatusNotCalculated)
@@ -168,15 +168,15 @@ func (p *LLMCostPolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _ ma
 
 // setCostMetadata writes x-llm-cost and x-llm-cost-status into SharedContext.Metadata
 // for the v1alpha2 engine path.
-func setCostMetadata(ctx *policyv1alpha2.ResponseContext, costUSD float64, status string) policyv1alpha2.ResponseAction {
+func setCostMetadata(ctx *policy.ResponseContext, costUSD float64, status string) policy.ResponseAction {
 	if ctx.SharedContext == nil {
 		slog.Warn("llm-cost: SharedContext is nil, cannot set cost metadata")
-		return policyv1alpha2.DownstreamResponseModifications{}
+		return policy.DownstreamResponseModifications{}
 	}
 	if ctx.Metadata == nil {
 		ctx.Metadata = make(map[string]interface{})
 	}
 	ctx.Metadata[MetadataLLMCost] = fmt.Sprintf("%.10f", costUSD)
 	ctx.Metadata[MetadataLLMCostStatus] = status
-	return policyv1alpha2.DownstreamResponseModifications{}
+	return policy.DownstreamResponseModifications{}
 }

@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"regexp"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -43,27 +43,27 @@ var ins = &RespondPolicy{}
 
 // GetPolicyV2 is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
 
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return ins, nil
 }
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *RespondPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *RespondPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -106,7 +106,7 @@ func validateHeaderObjectKeys(headerMap map[string]interface{}, index int) error
 }
 
 // OnRequestHeaders returns an immediate response to the client in the request header phase.
-func (p *RespondPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *RespondPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	statusCode := defaultStatusCode
 	if statusCodeRaw, ok := params["statusCode"]; ok {
 		parsedStatusCode, err := parseStatusCode(statusCodeRaw)
@@ -174,7 +174,7 @@ func (p *RespondPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 		}
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
 		Body:       body,
@@ -182,12 +182,12 @@ func (p *RespondPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 }
 
 // configError returns a 500 error response for configuration issues
-func configError(message string) policyv1alpha2.ImmediateResponse {
+func configError(message string) policy.ImmediateResponse {
 	errBody, _ := json.Marshal(map[string]string{
 		"error":   "Configuration Error",
 		"message": message,
 	})
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: 500,
 		Headers: map[string]string{
 			"content-type": "application/json",

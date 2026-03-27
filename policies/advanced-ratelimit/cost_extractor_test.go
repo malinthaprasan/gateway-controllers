@@ -3,7 +3,7 @@ package ratelimit
 import (
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 func TestCostExtractor_ExtractResponseCostV2_PlainBody(t *testing.T) {
@@ -19,11 +19,11 @@ func TestCostExtractor_ExtractResponseCostV2_PlainBody(t *testing.T) {
 		},
 	})
 
-	ctx := &policyv1alpha2.ResponseContext{
-		ResponseHeaders: policyv1alpha2.NewHeaders(map[string][]string{
+	ctx := &policy.ResponseContext{
+		ResponseHeaders: policy.NewHeaders(map[string][]string{
 			"content-type": {"application/json"},
 		}),
-		ResponseBody: &policyv1alpha2.Body{
+		ResponseBody: &policy.Body{
 			Present: true,
 			Content: []byte(`{"usage":{"prompt_tokens":42}}`),
 		},
@@ -51,11 +51,11 @@ func TestCostExtractor_ExtractResponseCostV2_FallsBackToDefault(t *testing.T) {
 		},
 	})
 
-	ctx := &policyv1alpha2.ResponseContext{
-		ResponseHeaders: policyv1alpha2.NewHeaders(map[string][]string{
+	ctx := &policy.ResponseContext{
+		ResponseHeaders: policy.NewHeaders(map[string][]string{
 			"content-type": {"application/json"},
 		}),
-		ResponseBody: &policyv1alpha2.Body{
+		ResponseBody: &policy.Body{
 			Present: true,
 			Content: []byte(`{"invalid json`),
 		},

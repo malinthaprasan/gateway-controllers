@@ -8,7 +8,7 @@ import (
 
 	"github.com/xeipuuv/gojsonschema"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 func decodeMessage(t *testing.T, body []byte) map[string]interface{} {
@@ -174,7 +174,7 @@ func TestParseParams_DisabledFlow_DoesNotRequireSchema(t *testing.T) {
 
 func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	t.Run("request flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -188,16 +188,16 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 			t.Fatalf("expected request params present and disabled, got hasRequest=%v enabled=%v", p.hasRequestParams, p.requestParams.Enabled)
 		}
 
-		action := p.OnRequestBody(&policyv1alpha2.RequestContext{
-			Body: &policyv1alpha2.Body{Content: []byte(`{"name":"alice"}`)},
+		action := p.OnRequestBody(&policy.RequestContext{
+			Body: &policy.Body{Content: []byte(`{"name":"alice"}`)},
 		}, nil)
-		if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected request no-op when request.enabled=false, got %T", action)
 		}
 	})
 
 	t.Run("response flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 			"response": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -211,16 +211,16 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 			t.Fatalf("expected response params present and disabled, got hasResponse=%v enabled=%v", p.hasResponseParams, p.responseParams.Enabled)
 		}
 
-		action := p.OnResponseBody(&policyv1alpha2.ResponseContext{
-			ResponseBody: &policyv1alpha2.Body{Content: []byte(`{"name":"alice"}`)},
+		action := p.OnResponseBody(&policy.ResponseContext{
+			ResponseBody: &policy.Body{Content: []byte(`{"name":"alice"}`)},
 		}, nil)
-		if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+		if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 			t.Fatalf("expected response no-op when response.enabled=false, got %T", action)
 		}
 	})
 
 	t.Run("disabled flow accepts empty schema", func(t *testing.T) {
-		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{
 				"enabled": false,
 				"schema":  "",
@@ -240,26 +240,26 @@ func TestDisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 }
 
 func TestGetPolicy(t *testing.T) {
-	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	_, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil || !strings.Contains(err.Error(), "at least one of 'request' or 'response' parameters must be provided") {
 		t.Fatalf("expected missing phase params error, got %v", err)
 	}
 
-	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	_, err = GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 		"request": map[string]interface{}{"schema": "{"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "invalid request parameters") {
 		t.Fatalf("expected invalid request params error, got %v", err)
 	}
 
-	_, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	_, err = GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 		"response": map[string]interface{}{"schema": "{"},
 	})
 	if err == nil || !strings.Contains(err.Error(), "invalid response parameters") {
 		t.Fatalf("expected invalid response params error, got %v", err)
 	}
 
-	pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 		"request": map[string]interface{}{"schema": `{"type":"object"}`},
 	})
 	if err != nil {
@@ -279,7 +279,7 @@ func TestGetPolicy(t *testing.T) {
 		t.Fatalf("expected request disabled by default")
 	}
 
-	pRaw, err = GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+	pRaw, err = GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 		"request":  map[string]interface{}{"schema": `{"type":"object"}`},
 		"response": map[string]interface{}{"schema": `{"type":"object"}`},
 	})
@@ -342,7 +342,7 @@ func TestValidatePayloadV2_NormalAndInvert(t *testing.T) {
 	result := p.validatePayload(validPayload, JSONSchemaGuardrailPolicyParams{
 		Schema: schema,
 	}, false)
-	if _, ok := result.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := result.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", result)
 	}
 
@@ -351,7 +351,7 @@ func TestValidatePayloadV2_NormalAndInvert(t *testing.T) {
 		Schema:         schema,
 		ShowAssessment: true,
 	}, false)
-	imm, ok := result.(policyv1alpha2.ImmediateResponse)
+	imm, ok := result.(policy.ImmediateResponse)
 	if !ok {
 		t.Fatalf("expected ImmediateResponse, got %T", result)
 	}
@@ -374,7 +374,7 @@ func TestValidatePayloadV2_NormalAndInvert(t *testing.T) {
 		Schema: schema,
 		Invert: true,
 	}, false)
-	if _, ok := result.(policyv1alpha2.ImmediateResponse); !ok {
+	if _, ok := result.(policy.ImmediateResponse); !ok {
 		t.Fatalf("expected ImmediateResponse for inverted-valid case, got %T", result)
 	}
 
@@ -383,7 +383,7 @@ func TestValidatePayloadV2_NormalAndInvert(t *testing.T) {
 		Schema: schema,
 		Invert: true,
 	}, false)
-	if _, ok := result.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := result.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications for inverted-invalid case, got %T", result)
 	}
 }
@@ -397,7 +397,7 @@ func TestValidatePayloadV2_JSONPathAndSchemaErrors(t *testing.T) {
 		JsonPath:       "$.missing",
 		ShowAssessment: true,
 	}, false)
-	imm, ok := result.(policyv1alpha2.ImmediateResponse)
+	imm, ok := result.(policy.ImmediateResponse)
 	if !ok {
 		t.Fatalf("expected ImmediateResponse on JSONPath error, got %T", result)
 	}
@@ -414,7 +414,7 @@ func TestValidatePayloadV2_JSONPathAndSchemaErrors(t *testing.T) {
 		Schema:         `{"type":"not-a-valid-jsonschema-type"}`,
 		ShowAssessment: true,
 	}, false)
-	imm, ok = result.(policyv1alpha2.ImmediateResponse)
+	imm, ok = result.(policy.ImmediateResponse)
 	if !ok {
 		t.Fatalf("expected ImmediateResponse on schema validation engine error, got %T", result)
 	}
@@ -430,7 +430,7 @@ func TestValidatePayloadV2_JSONPathAndSchemaErrors(t *testing.T) {
 func TestBuildErrorResponseV2_ResponsePhase(t *testing.T) {
 	p := &JSONSchemaGuardrailPolicy{}
 	res := p.buildErrorResponse("test reason", nil, true, false, nil)
-	mod, ok := res.(policyv1alpha2.DownstreamResponseModifications)
+	mod, ok := res.(policy.DownstreamResponseModifications)
 	if !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", res)
 	}
@@ -480,12 +480,12 @@ func TestBuildAssessmentObject(t *testing.T) {
 func TestOnRequestBodyAndOnResponseBody(t *testing.T) {
 	// No configured phase params -> no-op
 	p := &JSONSchemaGuardrailPolicy{}
-	reqResult := p.OnRequestBody(&policyv1alpha2.RequestContext{}, nil)
-	if _, ok := reqResult.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	reqResult := p.OnRequestBody(&policy.RequestContext{}, nil)
+	if _, ok := reqResult.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications no-op, got %T", reqResult)
 	}
-	respResult := p.OnResponseBody(&policyv1alpha2.ResponseContext{}, nil)
-	if _, ok := respResult.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	respResult := p.OnResponseBody(&policy.ResponseContext{}, nil)
+	if _, ok := respResult.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected DownstreamResponseModifications no-op, got %T", respResult)
 	}
 
@@ -495,8 +495,8 @@ func TestOnRequestBodyAndOnResponseBody(t *testing.T) {
 		Enabled: true,
 		Schema:  `{"type":"object","required":["name"]}`,
 	}
-	reqResult = p.OnRequestBody(&policyv1alpha2.RequestContext{Body: nil}, nil)
-	if _, ok := reqResult.(policyv1alpha2.ImmediateResponse); !ok {
+	reqResult = p.OnRequestBody(&policy.RequestContext{Body: nil}, nil)
+	if _, ok := reqResult.(policy.ImmediateResponse); !ok {
 		t.Fatalf("expected ImmediateResponse on invalid request payload, got %T", reqResult)
 	}
 
@@ -506,8 +506,8 @@ func TestOnRequestBodyAndOnResponseBody(t *testing.T) {
 		Enabled: true,
 		Schema:  `{"type":"object","required":["name"]}`,
 	}
-	respResult = p.OnResponseBody(&policyv1alpha2.ResponseContext{ResponseBody: nil}, nil)
-	respMod, ok := respResult.(policyv1alpha2.DownstreamResponseModifications)
+	respResult = p.OnResponseBody(&policy.ResponseContext{ResponseBody: nil}, nil)
+	respMod, ok := respResult.(policy.DownstreamResponseModifications)
 	if !ok {
 		t.Fatalf("expected DownstreamResponseModifications on invalid response payload, got %T", respResult)
 	}
@@ -516,14 +516,14 @@ func TestOnRequestBodyAndOnResponseBody(t *testing.T) {
 	}
 
 	p.requestParams.Enabled = false
-	reqDisabled := p.OnRequestBody(&policyv1alpha2.RequestContext{Body: &policyv1alpha2.Body{Content: []byte(`{"name":"alice"}`)}}, nil)
-	if _, ok := reqDisabled.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	reqDisabled := p.OnRequestBody(&policy.RequestContext{Body: &policy.Body{Content: []byte(`{"name":"alice"}`)}}, nil)
+	if _, ok := reqDisabled.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected request no-op when request.enabled=false, got %T", reqDisabled)
 	}
 
 	p.responseParams.Enabled = false
-	respDisabled := p.OnResponseBody(&policyv1alpha2.ResponseContext{ResponseBody: &policyv1alpha2.Body{Content: []byte(`{"name":"alice"}`)}}, nil)
-	if _, ok := respDisabled.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	respDisabled := p.OnResponseBody(&policy.ResponseContext{ResponseBody: &policy.Body{Content: []byte(`{"name":"alice"}`)}}, nil)
+	if _, ok := respDisabled.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected response no-op when response.enabled=false, got %T", respDisabled)
 	}
 }

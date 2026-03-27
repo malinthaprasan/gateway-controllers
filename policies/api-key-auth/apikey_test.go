@@ -7,15 +7,15 @@ import (
 	"testing"
 
 	apikeycommon "github.com/wso2/api-platform/common/apikey"
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 func TestGetPolicy_ReturnsSingleton(t *testing.T) {
-	p1, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	p1, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("GetPolicy failed: %v", err)
 	}
-	p2, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	p2, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{})
 	if err != nil {
 		t.Fatalf("GetPolicy failed: %v", err)
 	}
@@ -44,7 +44,7 @@ func TestAPIKeyPolicy_OnRequestHeaders_SuccessFromHeader(t *testing.T) {
 	if ctx.SharedContext.AuthContext.AuthType != "apikey" {
 		t.Fatalf("expected AuthType='apikey', got %q", ctx.SharedContext.AuthContext.AuthType)
 	}
-	mods, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := action.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Fatalf("expected UpstreamRequestHeaderModifications, got %T", action)
 	}
@@ -68,7 +68,7 @@ func TestAPIKeyPolicy_OnRequestHeaders_SuccessFromQuery(t *testing.T) {
 	if ctx.SharedContext.AuthContext == nil || !ctx.SharedContext.AuthContext.Authenticated {
 		t.Fatalf("expected AuthContext.Authenticated=true")
 	}
-	mods, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications)
+	mods, ok := action.(policy.UpstreamRequestHeaderModifications)
 	if !ok {
 		t.Fatalf("expected UpstreamRequestHeaderModifications, got %T", action)
 	}
@@ -232,13 +232,13 @@ func TestExtractQueryParam(t *testing.T) {
 	}
 }
 
-func newRequestHeaderContext(t *testing.T, method, path string, headers map[string][]string, apiID, apiName, apiVersion, opPath string) *policyv1alpha2.RequestHeaderContext {
+func newRequestHeaderContext(t *testing.T, method, path string, headers map[string][]string, apiID, apiName, apiVersion, opPath string) *policy.RequestHeaderContext {
 	t.Helper()
 	if headers == nil {
 		headers = map[string][]string{}
 	}
-	return &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	return &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			RequestID:     "req-1",
 			Metadata:      map[string]interface{}{},
 			APIId:         apiID,
@@ -246,15 +246,15 @@ func newRequestHeaderContext(t *testing.T, method, path string, headers map[stri
 			APIVersion:    apiVersion,
 			OperationPath: opPath,
 		},
-		Headers: policyv1alpha2.NewHeaders(headers),
+		Headers: policy.NewHeaders(headers),
 		Method:  method,
 		Path:    path,
 	}
 }
 
-func assertUnauthorizedJSON(t *testing.T, action policyv1alpha2.RequestHeaderAction) {
+func assertUnauthorizedJSON(t *testing.T, action policy.RequestHeaderAction) {
 	t.Helper()
-	resp, ok := action.(policyv1alpha2.ImmediateResponse)
+	resp, ok := action.(policy.ImmediateResponse)
 	if !ok {
 		t.Fatalf("expected ImmediateResponse, got %T", action)
 	}
@@ -283,7 +283,7 @@ func TestAPIKeyPolicy_AuthContext_PreviousPreserved_OnSuccess(t *testing.T) {
 	seedExternalAPIKey(t, "api-1", "header-secret", `["GET /orders"]`)
 
 	p := &APIKeyPolicy{}
-	prior := &policyv1alpha2.AuthContext{Authenticated: true, AuthType: "other"}
+	prior := &policy.AuthContext{Authenticated: true, AuthType: "other"}
 
 	ctx := newRequestHeaderContext(t, "GET", "/orders", map[string][]string{
 		"X-Api-Key": {"header-secret"},
@@ -295,7 +295,7 @@ func TestAPIKeyPolicy_AuthContext_PreviousPreserved_OnSuccess(t *testing.T) {
 		"in":  "header",
 	})
 
-	if _, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestHeaderModifications); !ok {
 		t.Fatalf("expected UpstreamRequestHeaderModifications, got %T", action)
 	}
 	if ctx.SharedContext.AuthContext == nil {
@@ -310,9 +310,9 @@ func TestAPIKeyPolicy_AuthContext_PreviousPreserved_OnFailure(t *testing.T) {
 	resetAPIKeyStore(t)
 
 	p := &APIKeyPolicy{}
-	prior := &policyv1alpha2.AuthContext{Authenticated: true, AuthType: "other"}
+	prior := &policy.AuthContext{Authenticated: true, AuthType: "other"}
 
-	shared := &policyv1alpha2.SharedContext{
+	shared := &policy.SharedContext{
 		RequestID:     "req-1",
 		Metadata:      map[string]interface{}{},
 		APIId:         "api-1",

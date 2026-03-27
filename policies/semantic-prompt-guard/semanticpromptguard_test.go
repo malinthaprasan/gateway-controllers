@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	embeddingproviders "github.com/wso2/api-platform/sdk/ai/utils/embeddingproviders"
 )
 
@@ -44,7 +44,7 @@ func (m *mockEmbeddingProvider) GetEmbeddings(inputs []string) ([][]float32, err
 }
 
 func TestGetPolicy_InvalidEmbeddingConfig(t *testing.T) {
-	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{})
+	_, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{})
 	if err == nil {
 		t.Fatalf("expected error for missing embedding config")
 	}
@@ -556,20 +556,20 @@ func TestSemanticPromptGuardPolicy_OnRequestAndValidatePayload(t *testing.T) {
 				params:            tt.params,
 			}
 
-			ctx := &policyv1alpha2.RequestContext{
-				SharedContext: &policyv1alpha2.SharedContext{RequestID: "r1", Metadata: map[string]interface{}{}},
-				Body:          &policyv1alpha2.Body{Content: []byte(tt.payload), Present: true, EndOfStream: true},
+			ctx := &policy.RequestContext{
+				SharedContext: &policy.SharedContext{RequestID: "r1", Metadata: map[string]interface{}{}},
+				Body:          &policy.Body{Content: []byte(tt.payload), Present: true, EndOfStream: true},
 			}
 
 			action := p.OnRequestBody(ctx, nil)
 			if !tt.wantImmediate {
-				if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+				if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 					t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 				}
 				return
 			}
 
-			resp, ok := action.(policyv1alpha2.ImmediateResponse)
+			resp, ok := action.(policy.ImmediateResponse)
 			if !ok {
 				t.Fatalf("expected ImmediateResponse, got %T", action)
 			}

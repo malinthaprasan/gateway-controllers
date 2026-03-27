@@ -21,12 +21,12 @@ package tokenbasedratelimit
 import (
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 // TestTokenBasedRateLimitPolicy_GetPolicy tests policy creation
 func TestTokenBasedRateLimitPolicy_GetPolicy(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 

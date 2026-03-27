@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
@@ -68,9 +68,9 @@ type ModelRoundRobinPolicy struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	// Parse and validate parameters
 	policyParams, err := parseParams(params)
 	if err != nil {
@@ -88,18 +88,18 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *ModelRoundRobinPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
-		ResponseBodyMode:   policyv1alpha2.BodyModeBuffer,
+func (p *ModelRoundRobinPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeProcess,
+		ResponseBodyMode:   policy.BodyModeBuffer,
 	}
 }
 
@@ -274,14 +274,14 @@ func (p *ModelRoundRobinPolicy) selectNextAvailableModel(models []ModelConfig) *
 // OnRequestHeaders selects the next model and applies the modification for header/queryParam/pathParam
 // locations in the request header phase. For payload location, the model is pre-selected and
 // stored in metadata for OnRequest to apply to the body.
-func (p *ModelRoundRobinPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *ModelRoundRobinPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	location := p.params.RequestModel.Location
 	identifier := p.params.RequestModel.Identifier
 
 	// Select next available model in round-robin fashion
 	selectedModel := p.selectNextAvailableModel(p.params.Models)
 	if selectedModel == nil {
-		return policyv1alpha2.ImmediateResponse{
+		return policy.ImmediateResponse{
 			StatusCode: 503,
 			Headers:    map[string]string{"Content-Type": "application/json"},
 			Body:       []byte(`{"error": "All models are currently unavailable"}`),
@@ -300,31 +300,31 @@ func (p *ModelRoundRobinPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHead
 				ctx.Metadata[MetadataKeyOriginalModel] = values[0]
 			}
 		}
-		return policyv1alpha2.UpstreamRequestHeaderModifications{
+		return policy.UpstreamRequestHeaderModifications{
 			HeadersToSet: map[string]string{identifier: selectedModel.Model},
 		}
 	case "queryParam":
 		newPath := p.modifyQueryParamInPath(ctx.Path, identifier, selectedModel.Model)
 		if newPath != ctx.Path {
-			return policyv1alpha2.UpstreamRequestHeaderModifications{
+			return policy.UpstreamRequestHeaderModifications{
 				HeadersToSet: map[string]string{":path": newPath},
 			}
 		}
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	case "pathParam":
 		newPath := p.modifyPathParamInPath(ctx.Path, identifier, selectedModel.Model)
 		if newPath != ctx.Path {
-			return policyv1alpha2.UpstreamRequestHeaderModifications{
+			return policy.UpstreamRequestHeaderModifications{
 				HeadersToSet: map[string]string{":path": newPath},
 			}
 		}
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
-	return policyv1alpha2.UpstreamRequestHeaderModifications{}
+	return policy.UpstreamRequestHeaderModifications{}
 }
 
 // OnResponseHeaders suspends a model in the response header phase when an error is detected.
-func (p *ModelRoundRobinPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderContext, params map[string]interface{}) policyv1alpha2.ResponseHeaderAction {
+func (p *ModelRoundRobinPolicy) OnResponseHeaders(ctx *policy.ResponseHeaderContext, params map[string]interface{}) policy.ResponseHeaderAction {
 	if ctx.ResponseStatus >= 500 || ctx.ResponseStatus == 429 {
 		selectedModel := ""
 		if model, ok := ctx.Metadata[MetadataKeySelectedModel]; ok {
@@ -339,25 +339,25 @@ func (p *ModelRoundRobinPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHe
 			slog.Debug("ModelRoundRobin: OnResponseHeaders suspended model", "model", selectedModel, "duration", p.params.SuspendDuration)
 		}
 	}
-	return policyv1alpha2.DownstreamResponseHeaderModifications{}
+	return policy.DownstreamResponseHeaderModifications{}
 }
 
 // OnRequestBody processes the request body in the v1alpha2 engine.
 // Since OnRequestHeaders always runs first in the v1alpha2 engine, only the payload
 // location case requires body-phase processing.
-func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	if p.params.RequestModel.Location != "payload" {
 		// Non-payload locations were handled in OnRequestHeaders
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	selectedModel, _ := ctx.Metadata[MetadataKeySelectedModel].(string)
 	if selectedModel == "" {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	if ctx.Body == nil || ctx.Body.Content == nil {
-		return policyv1alpha2.ImmediateResponse{
+		return policy.ImmediateResponse{
 			StatusCode: 400,
 			Headers:    map[string]string{"Content-Type": "application/json"},
 			Body:       []byte(`{"error":"Request body is empty."}`),
@@ -366,7 +366,7 @@ func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext
 
 	var payloadData map[string]interface{}
 	if err := json.Unmarshal(ctx.Body.Content, &payloadData); err != nil {
-		return policyv1alpha2.ImmediateResponse{
+		return policy.ImmediateResponse{
 			StatusCode: 400,
 			Headers:    map[string]string{"Content-Type": "application/json"},
 			Body:       []byte(fmt.Sprintf(`{"error":"Invalid JSON in request body: %s"}`, err.Error())),
@@ -375,7 +375,7 @@ func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext
 
 	identifier := p.params.RequestModel.Identifier
 	if err := utils.SetValueAtJSONPath(payloadData, identifier, selectedModel); err != nil {
-		return policyv1alpha2.ImmediateResponse{
+		return policy.ImmediateResponse{
 			StatusCode: 400,
 			Headers:    map[string]string{"Content-Type": "application/json"},
 			Body:       []byte(fmt.Sprintf(`{"error":"Invalid or missing model at '%s': %s"}`, identifier, err.Error())),
@@ -384,7 +384,7 @@ func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext
 
 	updatedPayload, err := json.Marshal(payloadData)
 	if err != nil {
-		return policyv1alpha2.ImmediateResponse{
+		return policy.ImmediateResponse{
 			StatusCode: 500,
 			Headers:    map[string]string{"Content-Type": "application/json"},
 			Body:       []byte(fmt.Sprintf(`{"error":"Failed to serialize updated request body: %s"}`, err.Error())),
@@ -392,7 +392,7 @@ func (p *ModelRoundRobinPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext
 	}
 
 	slog.Debug("ModelRoundRobin: OnRequestBody modified payload model", "newModel", selectedModel)
-	return policyv1alpha2.UpstreamRequestModifications{Body: updatedPayload}
+	return policy.UpstreamRequestModifications{Body: updatedPayload}
 }
 
 // modifyQueryParamInPath updates a query parameter value in a raw path string.

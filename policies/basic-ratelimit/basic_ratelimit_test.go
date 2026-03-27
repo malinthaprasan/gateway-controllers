@@ -5,25 +5,25 @@ import (
 	"strings"
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 type stubDelegatePolicy struct {
-	onRequestHeadersAction policyv1alpha2.RequestHeaderAction
-	onRequestHeadersCtx    *policyv1alpha2.RequestHeaderContext
+	onRequestHeadersAction policy.RequestHeaderAction
+	onRequestHeadersCtx    *policy.RequestHeaderContext
 	onRequestHeadersParams map[string]interface{}
 	onRequestHeadersCalls  int
 
-	onResponseHeadersAction policyv1alpha2.ResponseHeaderAction
-	onResponseHeadersCtx    *policyv1alpha2.ResponseHeaderContext
+	onResponseHeadersAction policy.ResponseHeaderAction
+	onResponseHeadersCtx    *policy.ResponseHeaderContext
 	onResponseHeadersParams map[string]interface{}
 	onResponseHeadersCalls  int
 }
 
 func (s *stubDelegatePolicy) OnRequestHeaders(
-	ctx *policyv1alpha2.RequestHeaderContext,
+	ctx *policy.RequestHeaderContext,
 	params map[string]interface{},
-) policyv1alpha2.RequestHeaderAction {
+) policy.RequestHeaderAction {
 	s.onRequestHeadersCalls++
 	s.onRequestHeadersCtx = ctx
 	s.onRequestHeadersParams = params
@@ -31,9 +31,9 @@ func (s *stubDelegatePolicy) OnRequestHeaders(
 }
 
 func (s *stubDelegatePolicy) OnResponseHeaders(
-	ctx *policyv1alpha2.ResponseHeaderContext,
+	ctx *policy.ResponseHeaderContext,
 	params map[string]interface{},
-) policyv1alpha2.ResponseHeaderAction {
+) policy.ResponseHeaderAction {
 	s.onResponseHeadersCalls++
 	s.onResponseHeadersCtx = ctx
 	s.onResponseHeadersParams = params
@@ -102,8 +102,8 @@ func TestTransformToRatelimitParams_DefaultQuotaAndRouteNameKeyExtraction(t *tes
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{
-		AttachedTo: policyv1alpha2.LevelRoute,
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{
+		AttachedTo: policy.LevelRoute,
 	})
 
 	quota := getSingleQuota(t, rlParams)
@@ -127,8 +127,8 @@ func TestTransformToRatelimitParams_UsesAPINameKeyExtractionAtAPILevel(t *testin
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{
-		AttachedTo: policyv1alpha2.LevelAPI,
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{
+		AttachedTo: policy.LevelAPI,
 	})
 
 	quota := getSingleQuota(t, rlParams)
@@ -147,7 +147,7 @@ func TestTransformToRatelimitParams_TranslatesRequestsToLimitAndRemovesRequests(
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 
 	limits := getQuotaLimits(t, quota)
@@ -179,7 +179,7 @@ func TestTransformToRatelimitParams_AllowsLegacyLimitWhenRequestsAbsent(t *testi
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 	if len(limits) != 1 {
@@ -207,7 +207,7 @@ func TestTransformToRatelimitParams_RequestsOverridesLimitWhenBothPresent(t *tes
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 	if len(limits) != 1 {
@@ -246,7 +246,7 @@ func TestTransformToRatelimitParams_TranslatesMultipleLimitEntries(t *testing.T)
 		},
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
 	quota := getSingleQuota(t, rlParams)
 	limits := getQuotaLimits(t, quota)
 
@@ -297,7 +297,7 @@ func TestTransformToRatelimitParams_PassesThroughSystemParamsIncludingNestedMaps
 		"memory":    memory,
 	}
 
-	rlParams := transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	rlParams := transformToRatelimitParams(params, policy.PolicyMetadata{})
 
 	if got := rlParams["algorithm"]; got != "gcra" {
 		t.Fatalf("expected algorithm passthrough gcra, got %v", got)
@@ -327,7 +327,7 @@ func TestTransformToRatelimitParams_DoesNotMutateInputLimits(t *testing.T) {
 		"limits": []interface{}{inputLimit},
 	}
 
-	_ = transformToRatelimitParams(params, policyv1alpha2.PolicyMetadata{})
+	_ = transformToRatelimitParams(params, policy.PolicyMetadata{})
 
 	if _, hasRequests := inputLimit["requests"]; !hasRequests {
 		t.Fatalf("expected original input map to still contain requests key")
@@ -386,7 +386,7 @@ func TestTransformToRatelimitParams_HandlesMissingOrMalformedLimitsWithoutPanic(
 				}
 			}()
 
-			rlParams := transformToRatelimitParams(tc.params, policyv1alpha2.PolicyMetadata{})
+			rlParams := transformToRatelimitParams(tc.params, policy.PolicyMetadata{})
 			quota := getSingleQuota(t, rlParams)
 			limits := getQuotaLimits(t, quota)
 
@@ -414,17 +414,17 @@ func TestTransformToRatelimitParams_HandlesMissingOrMalformedLimitsWithoutPanic(
 }
 
 func TestBasicRateLimitPolicy_OnRequestHeaders_ForwardsContextParamsAndActionUnchanged(t *testing.T) {
-	sentinel := policyv1alpha2.ImmediateResponse{StatusCode: 429}
+	sentinel := policy.ImmediateResponse{StatusCode: 429}
 	delegate := &stubDelegatePolicy{
 		onRequestHeadersAction: sentinel,
 	}
 	p := &BasicRateLimitPolicy{delegate: delegate}
 
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		Headers: policyv1alpha2.NewHeaders(map[string][]string{
+	ctx := &policy.RequestHeaderContext{
+		Headers: policy.NewHeaders(map[string][]string{
 			"x-request-id": {"req-123"},
 		}),
-		SharedContext: &policyv1alpha2.SharedContext{
+		SharedContext: &policy.SharedContext{
 			Metadata: map[string]interface{}{
 				"user": "alice",
 			},
@@ -456,7 +456,7 @@ func TestBasicRateLimitPolicy_OnRequestHeaders_ForwardsContextParamsAndActionUnc
 }
 
 func TestBasicRateLimitPolicy_OnResponseHeaders_ForwardsContextParamsAndActionUnchanged(t *testing.T) {
-	sentinel := policyv1alpha2.DownstreamResponseHeaderModifications{
+	sentinel := policy.DownstreamResponseHeaderModifications{
 		HeadersToSet: map[string]string{
 			"x-rate-limit": "ok",
 		},
@@ -466,11 +466,11 @@ func TestBasicRateLimitPolicy_OnResponseHeaders_ForwardsContextParamsAndActionUn
 	}
 	p := &BasicRateLimitPolicy{delegate: delegate}
 
-	ctx := &policyv1alpha2.ResponseHeaderContext{
-		ResponseHeaders: policyv1alpha2.NewHeaders(map[string][]string{
+	ctx := &policy.ResponseHeaderContext{
+		ResponseHeaders: policy.NewHeaders(map[string][]string{
 			"x-response-id": {"res-123"},
 		}),
-		SharedContext: &policyv1alpha2.SharedContext{
+		SharedContext: &policy.SharedContext{
 			Metadata: map[string]interface{}{
 				"tenant": "foo",
 			},
@@ -502,7 +502,7 @@ func TestBasicRateLimitPolicy_OnResponseHeaders_ForwardsContextParamsAndActionUn
 }
 
 func TestGetPolicy_ReturnsBasicRateLimitPolicy_WhenDelegateCreationSucceeds(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-success",
 	}
 
@@ -530,7 +530,7 @@ func TestGetPolicy_ReturnsBasicRateLimitPolicy_WhenDelegateCreationSucceeds(t *t
 }
 
 func TestGetPolicy_PropagatesError_WhenDelegateCreationFails(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-error",
 	}
 
@@ -557,7 +557,7 @@ func TestGetPolicy_PropagatesError_WhenDelegateCreationFails(t *testing.T) {
 }
 
 func TestGetPolicy_AcceptsLegacyLimitShape_ForDocsCompatibility(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "unit-test-basic-ratelimit-getpolicy-legacy-limit",
 	}
 

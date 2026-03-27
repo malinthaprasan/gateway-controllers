@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 func TestRegexGuardrailPolicy_GetPolicy_Defaults_RequestOnly(t *testing.T) {
@@ -189,7 +189,7 @@ func TestRegexGuardrailPolicy_GetPolicy_Errors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, tt.params)
+			_, err := GetPolicy(policy.PolicyMetadata{}, tt.params)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
 			}
@@ -233,7 +233,7 @@ func TestRegexGuardrailPolicy_ParseParams_DisabledFlow_DoesNotRequireRegex(t *te
 
 func TestRegexGuardrailPolicy_DisabledFlow_GetPolicyAndHandlers_NoRequiredParams(t *testing.T) {
 	t.Run("request flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 			"request": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -248,13 +248,13 @@ func TestRegexGuardrailPolicy_DisabledFlow_GetPolicyAndHandlers_NoRequiredParams
 		}
 
 		action := p.OnRequestBody(newRequestContextWithBody(`{"messages":[{"content":"hello"}]}`), nil)
-		if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected request no-op when request.enabled=false, got %T", action)
 		}
 	})
 
 	t.Run("response flow disabled", func(t *testing.T) {
-		pRaw, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, map[string]interface{}{
+		pRaw, err := GetPolicy(policy.PolicyMetadata{}, map[string]interface{}{
 			"response": map[string]interface{}{"enabled": false},
 		})
 		if err != nil {
@@ -269,7 +269,7 @@ func TestRegexGuardrailPolicy_DisabledFlow_GetPolicyAndHandlers_NoRequiredParams
 		}
 
 		action := p.OnResponseBody(newResponseContextWithBody(`{"status":"ok"}`), nil)
-		if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+		if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 			t.Fatalf("expected response no-op when response.enabled=false, got %T", action)
 		}
 	})
@@ -283,7 +283,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_NoRequestConfig_NoOp(t *testing.T) {
 	})
 
 	action := p.OnRequestBody(newRequestContextWithBody(`{"message":"hello"}`), nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -297,7 +297,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_Disabled_NoOp(t *testing.T) {
 	})
 
 	action := p.OnRequestBody(newRequestContextWithBody(`{"messages":[{"content":"hello"}]}`), nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -310,7 +310,7 @@ func TestRegexGuardrailPolicy_OnResponseBody_NoResponseConfig_NoOp(t *testing.T)
 	})
 
 	action := p.OnResponseBody(newResponseContextWithBody(`{"message":"hello"}`), nil)
-	if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", action)
 	}
 }
@@ -324,7 +324,7 @@ func TestRegexGuardrailPolicy_OnResponseBody_Disabled_NoOp(t *testing.T) {
 	})
 
 	action := p.OnResponseBody(newResponseContextWithBody(`{"message":"hello"}`), nil)
-	if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", action)
 	}
 }
@@ -336,18 +336,18 @@ func TestRegexGuardrailPolicy_OnRequestBody_EmptyBody_NoOp(t *testing.T) {
 		},
 	})
 
-	ctx := &policyv1alpha2.RequestContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "test-id",
 			Metadata:  map[string]interface{}{},
 		},
-		Body: &policyv1alpha2.Body{
+		Body: &policy.Body{
 			Content: []byte{},
 			Present: false,
 		},
 	}
 	action := p.OnRequestBody(ctx, nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -359,18 +359,18 @@ func TestRegexGuardrailPolicy_OnResponseBody_EmptyBody_NoOp(t *testing.T) {
 		},
 	})
 
-	ctx := &policyv1alpha2.ResponseContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.ResponseContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "test-id",
 			Metadata:  map[string]interface{}{},
 		},
-		ResponseBody: &policyv1alpha2.Body{
+		ResponseBody: &policy.Body{
 			Content: []byte{},
 			Present: false,
 		},
 	}
 	action := p.OnResponseBody(ctx, nil)
-	if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", action)
 	}
 }
@@ -383,7 +383,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_DefaultJSONPath_Success(t *testing.T
 	})
 
 	action := p.OnRequestBody(newRequestContextWithBody(`{"messages":[{"content":"hello world"}]}`), nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -397,7 +397,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_CustomJSONPath_Success(t *testing.T)
 	})
 
 	action := p.OnRequestBody(newRequestContextWithBody(`{"messages":[{"content":"my secret token"}]}`), nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -411,7 +411,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_EmptyJSONPath_UsesWholePayload(t *te
 	})
 
 	action := p.OnRequestBody(newRequestContextWithBody(`{"name":"sam"}`), nil)
-	if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 	}
 }
@@ -425,7 +425,7 @@ func TestRegexGuardrailPolicy_OnRequestBody_InvertBehavior(t *testing.T) {
 		},
 	})
 	passAction := passPolicy.OnRequestBody(newRequestContextWithBody(`{"messages":"allowed content"}`), nil)
-	if _, ok := passAction.(policyv1alpha2.UpstreamRequestModifications); !ok {
+	if _, ok := passAction.(policy.UpstreamRequestModifications); !ok {
 		t.Fatalf("expected pass with invert=true on non-match, got %T", passAction)
 	}
 
@@ -519,7 +519,7 @@ func TestRegexGuardrailPolicy_OnResponseBody_Success(t *testing.T) {
 	})
 
 	action := p.OnResponseBody(newResponseContextWithBody(`{"status":"ok"}`), nil)
-	if _, ok := action.(policyv1alpha2.DownstreamResponseModifications); !ok {
+	if _, ok := action.(policy.DownstreamResponseModifications); !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", action)
 	}
 }
@@ -586,7 +586,7 @@ func TestRegexGuardrailPolicy_BuildAssessmentObject(t *testing.T) {
 func mustGetRegexPolicy(t *testing.T, params map[string]interface{}) *RegexGuardrailPolicy {
 	t.Helper()
 
-	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{}, params)
+	p, err := GetPolicy(policy.PolicyMetadata{}, params)
 	if err != nil {
 		t.Fatalf("failed to create policy: %v", err)
 	}
@@ -597,10 +597,10 @@ func mustGetRegexPolicy(t *testing.T, params map[string]interface{}) *RegexGuard
 	return rp
 }
 
-func assertRequestErrorResponse(t *testing.T, action policyv1alpha2.RequestAction, expectAssessments bool, wantDirection string) map[string]interface{} {
+func assertRequestErrorResponse(t *testing.T, action policy.RequestAction, expectAssessments bool, wantDirection string) map[string]interface{} {
 	t.Helper()
 
-	resp, ok := action.(policyv1alpha2.ImmediateResponse)
+	resp, ok := action.(policy.ImmediateResponse)
 	if !ok {
 		t.Fatalf("expected ImmediateResponse, got %T", action)
 	}
@@ -620,10 +620,10 @@ func assertRequestErrorResponse(t *testing.T, action policyv1alpha2.RequestActio
 	return body
 }
 
-func assertResponseErrorResponse(t *testing.T, action policyv1alpha2.ResponseAction, expectAssessments bool, wantDirection string) map[string]interface{} {
+func assertResponseErrorResponse(t *testing.T, action policy.ResponseAction, expectAssessments bool, wantDirection string) map[string]interface{} {
 	t.Helper()
 
-	resp, ok := action.(policyv1alpha2.DownstreamResponseModifications)
+	resp, ok := action.(policy.DownstreamResponseModifications)
 	if !ok {
 		t.Fatalf("expected DownstreamResponseModifications, got %T", action)
 	}
@@ -682,26 +682,26 @@ func decodeJSONMap(t *testing.T, payload []byte) map[string]interface{} {
 	return result
 }
 
-func newRequestContextWithBody(body string) *policyv1alpha2.RequestContext {
-	return &policyv1alpha2.RequestContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+func newRequestContextWithBody(body string) *policy.RequestContext {
+	return &policy.RequestContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "test-request-id",
 			Metadata:  map[string]interface{}{},
 		},
-		Body: &policyv1alpha2.Body{
+		Body: &policy.Body{
 			Content: []byte(body),
 			Present: body != "",
 		},
 	}
 }
 
-func newResponseContextWithBody(body string) *policyv1alpha2.ResponseContext {
-	return &policyv1alpha2.ResponseContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+func newResponseContextWithBody(body string) *policy.ResponseContext {
+	return &policy.ResponseContext{
+		SharedContext: &policy.SharedContext{
 			RequestID: "test-request-id",
 			Metadata:  map[string]interface{}{},
 		},
-		ResponseBody: &policyv1alpha2.Body{
+		ResponseBody: &policy.Body{
 			Content: []byte(body),
 			Present: body != "",
 		},

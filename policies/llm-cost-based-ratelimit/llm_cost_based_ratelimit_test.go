@@ -23,16 +23,16 @@ import (
 	"sync/atomic"
 	"testing"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 // createTestRequestHeaderContext creates a request header context with provider metadata
-func createTestRequestHeaderContext(providerName string) *policyv1alpha2.RequestHeaderContext {
-	return &policyv1alpha2.RequestHeaderContext{
-		Headers: policyv1alpha2.NewHeaders(map[string][]string{
+func createTestRequestHeaderContext(providerName string) *policy.RequestHeaderContext {
+	return &policy.RequestHeaderContext{
+		Headers: policy.NewHeaders(map[string][]string{
 			"content-type": {"application/json"},
 		}),
-		SharedContext: &policyv1alpha2.SharedContext{
+		SharedContext: &policy.SharedContext{
 			Metadata: map[string]interface{}{
 				MetadataKeyProviderName: providerName,
 			},
@@ -42,7 +42,7 @@ func createTestRequestHeaderContext(providerName string) *policyv1alpha2.Request
 
 // TestLLMCostRateLimitPolicy_GetPolicy tests policy creation
 func TestLLMCostRateLimitPolicy_GetPolicy(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 
@@ -80,7 +80,7 @@ func TestLLMCostRateLimitPolicy_GetPolicy(t *testing.T) {
 
 // TestLLMCostRateLimitPolicy_OnRequestHeaders_NoProvider tests behavior when provider is missing
 func TestLLMCostRateLimitPolicy_OnRequestHeaders_NoProvider(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 
@@ -99,9 +99,9 @@ func TestLLMCostRateLimitPolicy_OnRequestHeaders_NoProvider(t *testing.T) {
 	}
 
 	// Create context without provider metadata
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		Headers: policyv1alpha2.NewHeaders(map[string][]string{}),
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		Headers: policy.NewHeaders(map[string][]string{}),
+		SharedContext: &policy.SharedContext{
 			Metadata: map[string]interface{}{}, // No provider_name
 		},
 	}
@@ -109,14 +109,14 @@ func TestLLMCostRateLimitPolicy_OnRequestHeaders_NoProvider(t *testing.T) {
 	action := p.(*LLMCostRateLimitPolicy).OnRequestHeaders(ctx, params)
 
 	// Should return UpstreamRequestHeaderModifications (skip) when no provider is found
-	if _, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestHeaderModifications); !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications when provider is missing, got %T", action)
 	}
 }
 
 // TestLLMCostRateLimitPolicy_OnRequestHeaders_EmptyProvider tests behavior with empty provider name
 func TestLLMCostRateLimitPolicy_OnRequestHeaders_EmptyProvider(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 
@@ -135,9 +135,9 @@ func TestLLMCostRateLimitPolicy_OnRequestHeaders_EmptyProvider(t *testing.T) {
 	}
 
 	// Create context with empty provider name
-	ctx := &policyv1alpha2.RequestHeaderContext{
-		Headers: policyv1alpha2.NewHeaders(map[string][]string{}),
-		SharedContext: &policyv1alpha2.SharedContext{
+	ctx := &policy.RequestHeaderContext{
+		Headers: policy.NewHeaders(map[string][]string{}),
+		SharedContext: &policy.SharedContext{
 			Metadata: map[string]interface{}{
 				MetadataKeyProviderName: "",
 			},
@@ -147,7 +147,7 @@ func TestLLMCostRateLimitPolicy_OnRequestHeaders_EmptyProvider(t *testing.T) {
 	action := p.(*LLMCostRateLimitPolicy).OnRequestHeaders(ctx, params)
 
 	// Should return UpstreamRequestHeaderModifications (skip) when provider name is empty
-	if _, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestHeaderModifications); !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications when provider is empty, got %T", action)
 	}
 }
@@ -311,7 +311,7 @@ func TestTransformToRatelimitParams_AlwaysHasCostExtraction(t *testing.T) {
 
 // TestLLMCostRateLimitPolicy_ConcurrentAccess tests thread-safe delegate creation
 func TestLLMCostRateLimitPolicy_ConcurrentAccess(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 
@@ -345,7 +345,7 @@ func TestLLMCostRateLimitPolicy_ConcurrentAccess(t *testing.T) {
 			ctx := createTestRequestHeaderContext("test-provider")
 			action := costPolicy.OnRequestHeaders(ctx, params)
 			// action should be UpstreamRequestHeaderModifications, shouldn't panic
-			if _, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications); ok {
+			if _, ok := action.(policy.UpstreamRequestHeaderModifications); ok {
 				successCount.Add(1)
 			}
 		}()
@@ -359,7 +359,7 @@ func TestLLMCostRateLimitPolicy_ConcurrentAccess(t *testing.T) {
 
 // TestLLMCostRateLimitPolicy_MultipleProviders tests handling multiple providers
 func TestLLMCostRateLimitPolicy_MultipleProviders(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "multi-provider-route",
 	}
 
@@ -403,7 +403,7 @@ func TestLLMCostRateLimitPolicy_MultipleProviders(t *testing.T) {
 // TestLLMCostRateLimitPolicy_Integration_NoBudgetLimits tests that no rate limiting
 // is applied when budgetLimits are not configured.
 func TestLLMCostRateLimitPolicy_Integration_NoBudgetLimits(t *testing.T) {
-	metadata := policyv1alpha2.PolicyMetadata{
+	metadata := policy.PolicyMetadata{
 		RouteName: "test-route",
 	}
 
@@ -421,7 +421,7 @@ func TestLLMCostRateLimitPolicy_Integration_NoBudgetLimits(t *testing.T) {
 	ctx := createTestRequestHeaderContext("any-provider")
 	action := p.(*LLMCostRateLimitPolicy).OnRequestHeaders(ctx, params)
 
-	if _, ok := action.(policyv1alpha2.UpstreamRequestHeaderModifications); !ok {
+	if _, ok := action.(policy.UpstreamRequestHeaderModifications); !ok {
 		t.Errorf("Expected UpstreamRequestHeaderModifications when no budget limits configured, got %T", action)
 	}
 }

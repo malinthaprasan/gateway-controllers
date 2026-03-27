@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
@@ -61,9 +61,9 @@ type RegexGuardrailPolicyParams struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &RegexGuardrailPolicy{}
 
 	// Extract and parse request parameters if present
@@ -98,18 +98,18 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *RegexGuardrailPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeStream,
+func (p *RegexGuardrailPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeSkip,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeStream,
 	}
 }
 
@@ -227,38 +227,38 @@ func (p *RegexGuardrailPolicy) buildAssessmentObject(reason string, validationEr
 }
 
 // OnRequestBody validates request body against regex pattern.
-func (p *RegexGuardrailPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *RegexGuardrailPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	if !p.hasRequestParams || !p.requestParams.Enabled {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	var content []byte
 	if ctx.Body != nil {
 		content = ctx.Body.Content
 	}
-	return p.validatePayload(content, p.requestParams, false).(policyv1alpha2.RequestAction)
+	return p.validatePayload(content, p.requestParams, false).(policy.RequestAction)
 }
 
 // OnResponseBody validates response body against regex pattern.
-func (p *RegexGuardrailPolicy) OnResponseBody(ctx *policyv1alpha2.ResponseContext, _ map[string]interface{}) policyv1alpha2.ResponseAction {
+func (p *RegexGuardrailPolicy) OnResponseBody(ctx *policy.ResponseContext, _ map[string]interface{}) policy.ResponseAction {
 	if !p.hasResponseParams || !p.responseParams.Enabled {
-		return policyv1alpha2.DownstreamResponseModifications{}
+		return policy.DownstreamResponseModifications{}
 	}
 
 	var content []byte
 	if ctx.ResponseBody != nil {
 		content = ctx.ResponseBody.Content
 	}
-	return p.validatePayload(content, p.responseParams, true).(policyv1alpha2.ResponseAction)
+	return p.validatePayload(content, p.responseParams, true).(policy.ResponseAction)
 }
 
-// validatePayload validates payload against regex pattern, returning policyv1alpha2 actions.
+// validatePayload validates payload against regex pattern, returning policy actions.
 func (p *RegexGuardrailPolicy) validatePayload(payload []byte, params RegexGuardrailPolicyParams, isResponse bool) interface{} {
 	if len(payload) == 0 {
 		if isResponse {
-			return policyv1alpha2.DownstreamResponseModifications{}
+			return policy.DownstreamResponseModifications{}
 		}
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 	extractedValue, err := utils.ExtractStringValueFromJsonpath(payload, params.JsonPath)
 	if err != nil {
@@ -287,9 +287,9 @@ func (p *RegexGuardrailPolicy) validatePayload(payload []byte, params RegexGuard
 
 	slog.Debug("RegexGuardrail: Validation passed", "regex", params.Regex, "matched", matched, "invert", params.Invert, "isResponse", isResponse)
 	if isResponse {
-		return policyv1alpha2.DownstreamResponseModifications{}
+		return policy.DownstreamResponseModifications{}
 	}
-	return policyv1alpha2.UpstreamRequestModifications{}
+	return policy.UpstreamRequestModifications{}
 }
 
 // ─── Streaming (SSE) support ──────────────────────────────────────────────────
@@ -325,12 +325,12 @@ func (p *RegexGuardrailPolicy) NeedsMoreResponseData(accumulated []byte) bool {
 // Validates SSE delta.content against the configured regex pattern,
 // accumulating content across chunks so patterns split across token
 // boundaries are still caught.
-func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx *policyv1alpha2.ResponseStreamContext, chunk *policyv1alpha2.StreamBody, params map[string]interface{}) policyv1alpha2.ResponseChunkAction {
+func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx *policy.ResponseStreamContext, chunk *policy.StreamBody, params map[string]interface{}) policy.ResponseChunkAction {
 	if !p.hasResponseParams || !p.responseParams.Enabled {
-		return policyv1alpha2.ResponseChunkAction{}
+		return policy.ResponseChunkAction{}
 	}
 	if chunk == nil || len(chunk.Chunk) == 0 {
-		return policyv1alpha2.ResponseChunkAction{}
+		return policy.ResponseChunkAction{}
 	}
 
 	if ctx.Metadata == nil {
@@ -345,13 +345,13 @@ func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx *policyv1alpha2.ResponseS
 		full := prev + chunkStr
 		ctx.Metadata[metaKeyAccJsonBody] = full
 		if !chunk.EndOfStream {
-			return policyv1alpha2.ResponseChunkAction{}
+			return policy.ResponseChunkAction{}
 		}
 		result := p.validatePayload([]byte(full), p.responseParams, true)
-		if mod, ok := result.(policyv1alpha2.DownstreamResponseModifications); ok && mod.StatusCode != nil {
-			return policyv1alpha2.ResponseChunkAction{Body: mod.Body}
+		if mod, ok := result.(policy.DownstreamResponseModifications); ok && mod.StatusCode != nil {
+			return policy.ResponseChunkAction{Body: mod.Body}
 		}
-		return policyv1alpha2.ResponseChunkAction{}
+		return policy.ResponseChunkAction{}
 	}
 
 	rp := p.responseParams
@@ -370,7 +370,7 @@ func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx *policyv1alpha2.ResponseS
 	compiledRegex, err := regexp.Compile(rp.Regex)
 	if err != nil {
 		// Invalid regex — pass through; the buffered path already caught this.
-		return policyv1alpha2.ResponseChunkAction{}
+		return policy.ResponseChunkAction{}
 	}
 
 	matched := compiledRegex.MatchString(accumulated)
@@ -391,10 +391,10 @@ func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx *policyv1alpha2.ResponseS
 	if violated {
 		slog.Debug("RegexGuardrail: streaming validation failed",
 			"regex", rp.Regex, "invert", rp.Invert, "chunkIndex", chunk.Index)
-		return policyv1alpha2.ResponseChunkAction{Body: p.buildSSEErrorEvent(rp)}
+		return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(rp)}
 	}
 
-	return policyv1alpha2.ResponseChunkAction{}
+	return policy.ResponseChunkAction{}
 }
 
 // isSSEChunk reports whether s contains at least one "data: " SSE line.
@@ -474,7 +474,7 @@ func (p *RegexGuardrailPolicy) buildSSEErrorEvent(rp RegexGuardrailPolicyParams)
 	return []byte(sseDataPrefix + string(bodyBytes) + "\n\n")
 }
 
-// buildErrorResponse builds a policyv1alpha2 error response for both request and response phases.
+// buildErrorResponse builds a policy error response for both request and response phases.
 func (p *RegexGuardrailPolicy) buildErrorResponse(reason string, validationError error, isResponse bool, showAssessment bool) interface{} {
 	assessment := p.buildAssessmentObject(reason, validationError, isResponse, showAssessment)
 	analyticsMetadata := map[string]interface{}{
@@ -494,17 +494,17 @@ func (p *RegexGuardrailPolicy) buildErrorResponse(reason string, validationError
 
 	if isResponse {
 		statusCode := GuardrailErrorCode
-		return policyv1alpha2.DownstreamResponseModifications{
+		return policy.DownstreamResponseModifications{
 			StatusCode:        &statusCode,
 			Body:              bodyBytes,
 			AnalyticsMetadata: analyticsMetadata,
-			DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
+			DownstreamResponseHeaderModifications: policy.DownstreamResponseHeaderModifications{
 				HeadersToSet: map[string]string{"Content-Type": "application/json"},
 			},
 		}
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode:        GuardrailErrorCode,
 		AnalyticsMetadata: analyticsMetadata,
 		Headers:           map[string]string{"Content-Type": "application/json"},

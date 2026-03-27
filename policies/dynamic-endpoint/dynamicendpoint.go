@@ -5,7 +5,7 @@ package dynamicendpoint
 import (
 	"log/slog"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 // DynamicEndpointPolicy routes requests to a dynamically specified upstream.
@@ -15,9 +15,9 @@ type DynamicEndpointPolicy struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	slog.Debug("[Dynamic Endpoint]: GetPolicy called")
 
 	targetUpstream, _ := params["targetUpstream"].(string)
@@ -29,33 +29,33 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *DynamicEndpointPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *DynamicEndpointPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
 // OnRequestHeaders routes the request to the configured upstream.
-func (p *DynamicEndpointPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *DynamicEndpointPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	slog.Info("[Dynamic Endpoint]: OnRequestHeaders called", "targetUpstream", p.targetUpstream)
 
 	if p.targetUpstream == "" {
 		slog.Warn("[Dynamic Endpoint]: No target upstream configured, passing through")
-		return policyv1alpha2.UpstreamRequestHeaderModifications{}
+		return policy.UpstreamRequestHeaderModifications{}
 	}
 
 	// Use UpstreamName to route the request to the target upstream definition.
 	// The upstream name must match an entry in the API's upstreamDefinitions.
-	return policyv1alpha2.UpstreamRequestHeaderModifications{
+	return policy.UpstreamRequestHeaderModifications{
 		UpstreamName: &p.targetUpstream,
 	}
 }

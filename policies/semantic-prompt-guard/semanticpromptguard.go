@@ -25,7 +25,7 @@ import (
 	"strconv"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 	embeddingproviders "github.com/wso2/api-platform/sdk/ai/utils/embeddingproviders"
 )
@@ -63,9 +63,9 @@ type SemanticPromptGuardPolicy struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &SemanticPromptGuardPolicy{}
 
 	// Parse and validate embedding provider configuration (from systemParameters)
@@ -92,19 +92,19 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
 // Mode returns the processing mode for the semantic prompt guard policy.
-func (p *SemanticPromptGuardPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *SemanticPromptGuardPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeSkip,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -407,15 +407,15 @@ func cosineSimilarity(a, b []float32) (float64, error) {
 }
 
 // OnRequestBody performs semantic filtering of the incoming prompt.
-func (p *SemanticPromptGuardPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *SemanticPromptGuardPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	var content []byte
 	if ctx.Body != nil {
 		content = ctx.Body.Content
 	}
-	return p.validatePayload(content, p.params).(policyv1alpha2.RequestAction)
+	return p.validatePayload(content, p.params).(policy.RequestAction)
 }
 
-// validatePayload validates payload using semantic similarity, returning policyv1alpha2 actions.
+// validatePayload validates payload using semantic similarity, returning policy actions.
 func (p *SemanticPromptGuardPolicy) validatePayload(payload []byte, params SemanticPromptGuardPolicyParams) interface{} {
 	prompt, err := utils.ExtractStringValueFromJsonpath(payload, params.JsonPath)
 	if err != nil {
@@ -444,7 +444,7 @@ func (p *SemanticPromptGuardPolicy) validatePayload(payload []byte, params Seman
 			slog.Debug("SemanticPromptGuard: Error calculating similarity to denied phrases", "error", err)
 			return p.buildErrorResponse("Error calculating semantic similarity", err, params.ShowAssessment)
 		}
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	} else if len(params.AllowedPhrases) > 0 && len(params.DeniedPhrases) == 0 {
 		allowedSimilarity, phrase, err := maxSimilarity(promptEmbedding, params.AllowedPhrases)
 		if err != nil {
@@ -453,7 +453,7 @@ func (p *SemanticPromptGuardPolicy) validatePayload(payload []byte, params Seman
 		}
 		if allowedSimilarity >= params.AllowSimilarityThreshold {
 			slog.Debug("SemanticPromptGuard: ALLOWED - prompt matches allowed phrase", "phrase", phrase.Phrase, "similarity", allowedSimilarity, "threshold", params.AllowSimilarityThreshold)
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 		slog.Debug("SemanticPromptGuard: BLOCKED - prompt does not match allowed phrases", "maxSimilarity", allowedSimilarity, "threshold", params.AllowSimilarityThreshold)
 		reason := fmt.Sprintf("prompt is not similar enough to allowed phrases (similarity=%.4f < threshold=%.4f)", allowedSimilarity, params.AllowSimilarityThreshold)
@@ -477,7 +477,7 @@ func (p *SemanticPromptGuardPolicy) validatePayload(payload []byte, params Seman
 		}
 		if allowedSimilarity >= params.AllowSimilarityThreshold {
 			slog.Debug("SemanticPromptGuard: ALLOWED - prompt matches allowed phrase", "phrase", phrase.Phrase, "similarity", allowedSimilarity, "threshold", params.AllowSimilarityThreshold)
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 		slog.Debug("SemanticPromptGuard: BLOCKED - prompt does not match allowed phrases", "maxSimilarity", allowedSimilarity, "threshold", params.AllowSimilarityThreshold)
 		reason := fmt.Sprintf("prompt is not similar enough to allowed phrases (similarity=%.4f < threshold=%.4f)", allowedSimilarity, params.AllowSimilarityThreshold)
@@ -485,8 +485,8 @@ func (p *SemanticPromptGuardPolicy) validatePayload(payload []byte, params Seman
 	}
 }
 
-// buildErrorResponse builds a policyv1alpha2 error response for request phase.
-func (p *SemanticPromptGuardPolicy) buildErrorResponse(reason string, validationError error, showAssessment bool) policyv1alpha2.RequestAction {
+// buildErrorResponse builds a policy error response for request phase.
+func (p *SemanticPromptGuardPolicy) buildErrorResponse(reason string, validationError error, showAssessment bool) policy.RequestAction {
 	assessment := p.buildAssessmentObject(reason, validationError, showAssessment)
 	analyticsMetadata := map[string]interface{}{
 		"isGuardrailHit": true,
@@ -503,7 +503,7 @@ func (p *SemanticPromptGuardPolicy) buildErrorResponse(reason string, validation
 		bodyBytes = []byte(`{"type":"SEMANTIC_PROMPT_GUARD","message":"Internal error"}`)
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode:        GuardrailErrorCode,
 		AnalyticsMetadata: analyticsMetadata,
 		Headers: map[string]string{

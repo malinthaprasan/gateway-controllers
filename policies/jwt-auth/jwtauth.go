@@ -35,7 +35,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 )
 
 const (
@@ -116,26 +116,26 @@ var ins = &JwtAuthPolicy{
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return ins, nil
 }
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *JwtAuthPolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
-		RequestBodyMode:    policyv1alpha2.BodyModeSkip,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *JwtAuthPolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		RequestBodyMode:    policy.BodyModeSkip,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -1103,7 +1103,7 @@ func parsePublicKeyFromString(pemData string) (*rsa.PublicKey, error) {
 }
 
 // OnRequestHeaders performs JWT validation in the request header phase.
-func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	slog.Debug("JWT Auth Policy: OnRequestHeaders started")
 
 	headerName := getStringParam(params, "headerName", "Authorization")
@@ -1466,7 +1466,7 @@ func (p *JwtAuthPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContex
 }
 
 // handleAuthSuccessHeaders handles successful JWT authentication in the header phase.
-func (p *JwtAuthPolicy) handleAuthSuccessHeaders(shared *policyv1alpha2.SharedContext, claims jwt.MapClaims, claimMappings map[string]string, userIdClaim string) policyv1alpha2.RequestHeaderAction {
+func (p *JwtAuthPolicy) handleAuthSuccessHeaders(shared *policy.SharedContext, claims jwt.MapClaims, claimMappings map[string]string, userIdClaim string) policy.RequestHeaderAction {
 	sub, _ := claims["sub"].(string)
 	iss, _ := claims["iss"].(string)
 
@@ -1480,7 +1480,7 @@ func (p *JwtAuthPolicy) handleAuthSuccessHeaders(shared *policyv1alpha2.SharedCo
 		}
 	}
 
-	shared.AuthContext = &policyv1alpha2.AuthContext{
+	shared.AuthContext = &policy.AuthContext{
 		Authenticated: true,
 		AuthType:      AuthType,
 		Subject:       subject,
@@ -1491,7 +1491,7 @@ func (p *JwtAuthPolicy) handleAuthSuccessHeaders(shared *policyv1alpha2.SharedCo
 		Previous:      shared.AuthContext,
 	}
 
-	modifications := policyv1alpha2.UpstreamRequestHeaderModifications{
+	modifications := policy.UpstreamRequestHeaderModifications{
 		HeadersToSet: make(map[string]string),
 	}
 
@@ -1505,13 +1505,13 @@ func (p *JwtAuthPolicy) handleAuthSuccessHeaders(shared *policyv1alpha2.SharedCo
 }
 
 // handleAuthFailureHeaders handles JWT authentication failure in the header phase.
-func (p *JwtAuthPolicy) handleAuthFailureHeaders(shared *policyv1alpha2.SharedContext, statusCode int, errorFormat, errorMessage, reason string) policyv1alpha2.RequestHeaderAction {
+func (p *JwtAuthPolicy) handleAuthFailureHeaders(shared *policy.SharedContext, statusCode int, errorFormat, errorMessage, reason string) policy.RequestHeaderAction {
 	slog.Debug("JWT Auth Policy: handleAuthFailureHeaders called",
 		"statusCode", statusCode,
 		"reason", reason,
 	)
 
-	shared.AuthContext = &policyv1alpha2.AuthContext{
+	shared.AuthContext = &policy.AuthContext{
 		Authenticated: false,
 		AuthType:      AuthType,
 		Previous:      shared.AuthContext,
@@ -1537,7 +1537,7 @@ func (p *JwtAuthPolicy) handleAuthFailureHeaders(shared *policyv1alpha2.SharedCo
 		body = string(bodyBytes)
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: statusCode,
 		Headers:    headers,
 		Body:       []byte(body),

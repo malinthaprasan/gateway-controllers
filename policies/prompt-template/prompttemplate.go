@@ -26,7 +26,7 @@ import (
 	"slices"
 	"strings"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
@@ -73,9 +73,9 @@ type PromptTemplatePolicyParams struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	p := &PromptTemplatePolicy{}
 
 	// Parse parameters
@@ -90,19 +90,19 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
 // Mode returns the processing mode for the prompt template policy.
-func (p *PromptTemplatePolicy) Mode() policyv1alpha2.ProcessingMode {
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeSkip,
-		RequestBodyMode:    policyv1alpha2.BodyModeBuffer,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeSkip,
-		ResponseBodyMode:   policyv1alpha2.BodyModeSkip,
+func (p *PromptTemplatePolicy) Mode() policy.ProcessingMode {
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeSkip,
+		RequestBodyMode:    policy.BodyModeBuffer,
+		ResponseHeaderMode: policy.HeaderModeSkip,
+		ResponseBodyMode:   policy.BodyModeSkip,
 	}
 }
 
@@ -336,14 +336,14 @@ func (p *PromptTemplatePolicy) extractStringAtPath(payload []byte, jsonPath stri
 }
 
 // OnRequestBody applies the configured template to the request body.
-func (p *PromptTemplatePolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *PromptTemplatePolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	var content []byte
 	if ctx.Body != nil {
 		content = ctx.Body.Content
 	}
 
 	if len(content) == 0 {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// If jsonPath is empty, resolve template references across the whole payload
@@ -354,9 +354,9 @@ func (p *PromptTemplatePolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext,
 			return p.buildErrorResponse("Error resolving templates", err)
 		}
 		if updatedContent == string(content) {
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
-		return policyv1alpha2.UpstreamRequestModifications{
+		return policy.UpstreamRequestModifications{
 			Body: []byte(updatedContent),
 		}
 	}
@@ -377,7 +377,7 @@ func (p *PromptTemplatePolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext,
 		return p.buildErrorResponse("Error resolving templates", err)
 	}
 	if updatedValue == extractedValue {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	if err := utils.SetValueAtJSONPath(payloadData, p.params.JsonPath, updatedValue); err != nil {
@@ -389,13 +389,13 @@ func (p *PromptTemplatePolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext,
 		return p.buildErrorResponse("Error marshaling updated JSON payload", err)
 	}
 
-	return policyv1alpha2.UpstreamRequestModifications{
+	return policy.UpstreamRequestModifications{
 		Body: updatedPayload,
 	}
 }
 
 // buildV1ErrorResponse builds an error response for the v1alpha OnRequest method.
-func (p *PromptTemplatePolicy) buildErrorResponse(reason string, validationError error) policyv1alpha2.RequestAction {
+func (p *PromptTemplatePolicy) buildErrorResponse(reason string, validationError error) policy.RequestAction {
 	errorMessage := reason
 	if validationError != nil {
 		errorMessage = fmt.Sprintf("%s: %v", reason, validationError)
@@ -408,7 +408,7 @@ func (p *PromptTemplatePolicy) buildErrorResponse(reason string, validationError
 	if err != nil {
 		bodyBytes = []byte(`{"type":"PROMPT_TEMPLATE_ERROR","message":"Internal error"}`)
 	}
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: 500,
 		Headers: map[string]string{
 			"Content-Type": "application/json",

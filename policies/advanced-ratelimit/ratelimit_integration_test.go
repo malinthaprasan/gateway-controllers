@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	"github.com/wso2/gateway-controllers/policies/advanced-ratelimit/limiter"
 )
 
@@ -120,18 +120,18 @@ func newResult(allowed bool, limit, remaining int64, retryAfter, duration time.D
 	}
 }
 
-func newRequestCtx(headers map[string][]string, metadata map[string]interface{}) *policyv1alpha2.RequestContext {
+func newRequestCtx(headers map[string][]string, metadata map[string]interface{}) *policy.RequestContext {
 	if metadata == nil {
 		metadata = map[string]interface{}{}
 	}
 	if headers == nil {
 		headers = map[string][]string{}
 	}
-	return &policyv1alpha2.RequestContext{
-		Headers: policyv1alpha2.NewHeaders(headers),
+	return &policy.RequestContext{
+		Headers: policy.NewHeaders(headers),
 		Path:    "/pets/123",
 		Method:  "GET",
-		SharedContext: &policyv1alpha2.SharedContext{
+		SharedContext: &policy.SharedContext{
 			Metadata:   metadata,
 			APIName:    "petstore",
 			APIVersion: "v1",
@@ -141,7 +141,7 @@ func newRequestCtx(headers map[string][]string, metadata map[string]interface{})
 	}
 }
 
-func newResponseCtx(reqHeaders, respHeaders map[string][]string, metadata map[string]interface{}, status int) *policyv1alpha2.ResponseContext {
+func newResponseCtx(reqHeaders, respHeaders map[string][]string, metadata map[string]interface{}, status int) *policy.ResponseContext {
 	if metadata == nil {
 		metadata = map[string]interface{}{}
 	}
@@ -151,11 +151,11 @@ func newResponseCtx(reqHeaders, respHeaders map[string][]string, metadata map[st
 	if respHeaders == nil {
 		respHeaders = map[string][]string{}
 	}
-	return &policyv1alpha2.ResponseContext{
-		RequestHeaders:  policyv1alpha2.NewHeaders(reqHeaders),
-		ResponseHeaders: policyv1alpha2.NewHeaders(respHeaders),
+	return &policy.ResponseContext{
+		RequestHeaders:  policy.NewHeaders(reqHeaders),
+		ResponseHeaders: policy.NewHeaders(respHeaders),
 		ResponseStatus:  status,
-		SharedContext: &policyv1alpha2.SharedContext{
+		SharedContext: &policy.SharedContext{
 			Metadata:   metadata,
 			APIName:    "petstore",
 			APIVersion: "v1",
@@ -165,11 +165,11 @@ func newResponseCtx(reqHeaders, respHeaders map[string][]string, metadata map[st
 	}
 }
 
-func assertImmediateResponse(t *testing.T, action interface{}, expectedStatus int) policyv1alpha2.ImmediateResponse {
+func assertImmediateResponse(t *testing.T, action interface{}, expectedStatus int) policy.ImmediateResponse {
 	t.Helper()
-	resp, ok := action.(policyv1alpha2.ImmediateResponse)
+	resp, ok := action.(policy.ImmediateResponse)
 	if !ok {
-		t.Fatalf("expected policyv1alpha2.ImmediateResponse, got %T", action)
+		t.Fatalf("expected policy.ImmediateResponse, got %T", action)
 	}
 	if resp.StatusCode != expectedStatus {
 		t.Fatalf("expected status %d, got %d", expectedStatus, resp.StatusCode)
@@ -177,11 +177,11 @@ func assertImmediateResponse(t *testing.T, action interface{}, expectedStatus in
 	return resp
 }
 
-func assertUpstreamResponseHeaders(t *testing.T, action interface{}, required map[string]string) policyv1alpha2.DownstreamResponseModifications {
+func assertUpstreamResponseHeaders(t *testing.T, action interface{}, required map[string]string) policy.DownstreamResponseModifications {
 	t.Helper()
-	mods, ok := action.(policyv1alpha2.DownstreamResponseModifications)
+	mods, ok := action.(policy.DownstreamResponseModifications)
 	if !ok {
-		t.Fatalf("expected policyv1alpha2.DownstreamResponseModifications, got %T", action)
+		t.Fatalf("expected policy.DownstreamResponseModifications, got %T", action)
 	}
 	for k, v := range required {
 		if mods.HeadersToSet[k] != v {
@@ -214,7 +214,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	defer clearCaches()
 
 	t.Run("uses unknown-route when metadata route empty", func(t *testing.T) {
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{APIName: "api-a", APIVersion: "v1"}, basicQuotaParams())
+		p, err := GetPolicy(policy.PolicyMetadata{APIName: "api-a", APIVersion: "v1"}, basicQuotaParams())
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -225,7 +225,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	})
 
 	t.Run("returns error when quotas missing", func(t *testing.T) {
-		_, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, map[string]interface{}{"backend": "memory"})
+		_, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, map[string]interface{}{"backend": "memory"})
 		if err == nil || !strings.Contains(err.Error(), "quotas configuration is required") {
 			t.Fatalf("expected quotas required error, got %v", err)
 		}
@@ -234,7 +234,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	t.Run("returns error for invalid global keyExtraction shape", func(t *testing.T) {
 		params := basicQuotaParams()
 		params["keyExtraction"] = "invalid"
-		_, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		_, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err == nil || !strings.Contains(err.Error(), "invalid keyExtraction") {
 			t.Fatalf("expected invalid keyExtraction error, got %v", err)
 		}
@@ -246,7 +246,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 		quotas := params["quotas"].([]interface{})
 		quotas[0].(map[string]interface{})["keyExtraction"] = []interface{}{map[string]interface{}{"type": "constant", "key": "quota"}}
 
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -260,7 +260,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 		params := basicQuotaParams()
 		params["keyExtraction"] = []interface{}{map[string]interface{}{"type": "constant", "key": "global"}}
 
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -271,7 +271,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	})
 
 	t.Run("falls back to default routename keyExtraction", func(t *testing.T) {
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "route-a"}, basicQuotaParams())
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "route-a"}, basicQuotaParams())
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -282,7 +282,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	})
 
 	t.Run("uses default exceeded response configuration", func(t *testing.T) {
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, basicQuotaParams())
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, basicQuotaParams())
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -310,7 +310,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 			"includeIETF":       false,
 			"includeRetryAfter": false,
 		}
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -326,7 +326,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 	t.Run("fails on unknown algorithm", func(t *testing.T) {
 		params := basicQuotaParams()
 		params["algorithm"] = "unknown"
-		_, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		_, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err == nil || !strings.Contains(err.Error(), "unknown algorithm") {
 			t.Fatalf("expected unknown algorithm error, got %v", err)
 		}
@@ -343,7 +343,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 			"readTimeout":       "1ms",
 			"writeTimeout":      "1ms",
 		}
-		_, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		_, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err == nil || !strings.Contains(err.Error(), "failureMode=closed") {
 			t.Fatalf("expected redis closed-mode error, got %v", err)
 		}
@@ -360,7 +360,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 			"readTimeout":       "1ms",
 			"writeTimeout":      "1ms",
 		}
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err != nil {
 			t.Fatalf("expected open-mode policy creation to succeed, got %v", err)
 		}
@@ -384,7 +384,7 @@ func TestGetPolicy_ConfigAndDefaults(t *testing.T) {
 				},
 			},
 		}
-		p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "r1"}, params)
+		p, err := GetPolicy(policy.PolicyMetadata{RouteName: "r1"}, params)
 		if err != nil {
 			t.Fatalf("GetPolicy returned error: %v", err)
 		}
@@ -405,7 +405,7 @@ func TestMemoryCacheReuseAndRefCounts(t *testing.T) {
 	clearCaches()
 	defer clearCaches()
 
-	metadata := policyv1alpha2.PolicyMetadata{RouteName: "route-a", APIName: "api-a", APIVersion: "v1"}
+	metadata := policy.PolicyMetadata{RouteName: "route-a", APIName: "api-a", APIVersion: "v1"}
 	params := map[string]interface{}{
 		"backend":   "memory",
 		"algorithm": "fixed-window",
@@ -448,9 +448,9 @@ func TestSharedQuotaLimiterCleanup(t *testing.T) {
 	defer clearCaches()
 
 	apiName := "test-api"
-	metadata1 := policyv1alpha2.PolicyMetadata{RouteName: "route-1", APIName: apiName, APIVersion: "v1"}
-	metadata2 := policyv1alpha2.PolicyMetadata{RouteName: "route-2", APIName: apiName, APIVersion: "v1"}
-	metadata3 := policyv1alpha2.PolicyMetadata{RouteName: "route-3", APIName: apiName, APIVersion: "v1"}
+	metadata1 := policy.PolicyMetadata{RouteName: "route-1", APIName: apiName, APIVersion: "v1"}
+	metadata2 := policy.PolicyMetadata{RouteName: "route-2", APIName: apiName, APIVersion: "v1"}
+	metadata3 := policy.PolicyMetadata{RouteName: "route-3", APIName: apiName, APIVersion: "v1"}
 
 	sharedParams := func() map[string]interface{} {
 		return map[string]interface{}{
@@ -545,8 +545,8 @@ func TestRouteScopedQuotaCleanup(t *testing.T) {
 	defer clearCaches()
 
 	apiName := "test-api"
-	metadata1 := policyv1alpha2.PolicyMetadata{RouteName: "route-1", APIName: apiName, APIVersion: "v1"}
-	metadata2 := policyv1alpha2.PolicyMetadata{RouteName: "route-2", APIName: apiName, APIVersion: "v1"}
+	metadata1 := policy.PolicyMetadata{RouteName: "route-1", APIName: apiName, APIVersion: "v1"}
+	metadata2 := policy.PolicyMetadata{RouteName: "route-2", APIName: apiName, APIVersion: "v1"}
 
 	params := func(name string) map[string]interface{} {
 		return map[string]interface{}{
@@ -603,38 +603,38 @@ func TestModeBehavior(t *testing.T) {
 	tests := []struct {
 		name        string
 		quotas      []QuotaRuntime
-		wantReqBody policyv1alpha2.BodyProcessingMode
-		wantResBody policyv1alpha2.BodyProcessingMode
+		wantReqBody policy.BodyProcessingMode
+		wantResBody policy.BodyProcessingMode
 	}{
 		{
 			name:        "no cost extraction",
 			quotas:      []QuotaRuntime{{}},
-			wantReqBody: policyv1alpha2.BodyModeSkip,
-			wantResBody: policyv1alpha2.BodyModeSkip,
+			wantReqBody: policy.BodyModeSkip,
+			wantResBody: policy.BodyModeSkip,
 		},
 		{
 			name:        "request body source",
 			quotas:      []QuotaRuntime{mkQuota(true, []CostSource{{Type: CostSourceRequestBody, JSONPath: "$.tokens"}})},
-			wantReqBody: policyv1alpha2.BodyModeBuffer,
-			wantResBody: policyv1alpha2.BodyModeSkip,
+			wantReqBody: policy.BodyModeBuffer,
+			wantResBody: policy.BodyModeSkip,
 		},
 		{
 			name:        "response body source",
 			quotas:      []QuotaRuntime{mkQuota(true, []CostSource{{Type: CostSourceResponseBody, JSONPath: "$.usage.total"}})},
-			wantReqBody: policyv1alpha2.BodyModeSkip,
-			wantResBody: policyv1alpha2.BodyModeBuffer,
+			wantReqBody: policy.BodyModeSkip,
+			wantResBody: policy.BodyModeBuffer,
 		},
 		{
 			name:        "mixed body sources",
 			quotas:      []QuotaRuntime{mkQuota(true, []CostSource{{Type: CostSourceRequestBody, JSONPath: "$.in"}, {Type: CostSourceResponseBody, JSONPath: "$.out"}})},
-			wantReqBody: policyv1alpha2.BodyModeBuffer,
-			wantResBody: policyv1alpha2.BodyModeBuffer,
+			wantReqBody: policy.BodyModeBuffer,
+			wantResBody: policy.BodyModeBuffer,
 		},
 		{
 			name:        "configured but effectively disabled",
 			quotas:      []QuotaRuntime{mkQuota(false, []CostSource{{Type: CostSourceResponseBody, JSONPath: "$.x"}})},
-			wantReqBody: policyv1alpha2.BodyModeSkip,
-			wantResBody: policyv1alpha2.BodyModeSkip,
+			wantReqBody: policy.BodyModeSkip,
+			wantResBody: policy.BodyModeSkip,
 		},
 	}
 
@@ -645,7 +645,7 @@ func TestModeBehavior(t *testing.T) {
 			if mode.RequestBodyMode != tt.wantReqBody || mode.ResponseBodyMode != tt.wantResBody {
 				t.Fatalf("unexpected mode: req=%v resp=%v", mode.RequestBodyMode, mode.ResponseBodyMode)
 			}
-			if mode.RequestHeaderMode != policyv1alpha2.HeaderModeProcess || mode.ResponseHeaderMode != policyv1alpha2.HeaderModeProcess {
+			if mode.RequestHeaderMode != policy.HeaderModeProcess || mode.ResponseHeaderMode != policy.HeaderModeProcess {
 				t.Fatalf("expected header mode process for both phases, got req=%v resp=%v", mode.RequestHeaderMode, mode.ResponseHeaderMode)
 			}
 		})
@@ -773,13 +773,13 @@ func TestKeyExtractionBehavior(t *testing.T) {
 
 func TestKeyExtractionHeaderPhase(t *testing.T) {
 	p := &RateLimitPolicy{routeName: "route-main"}
-	hctx := &policyv1alpha2.RequestHeaderContext{
-		SharedContext: &policyv1alpha2.SharedContext{
+	hctx := &policy.RequestHeaderContext{
+		SharedContext: &policy.SharedContext{
 			APIName:    "petstore",
 			APIVersion: "v1",
 			Metadata:   map[string]interface{}{},
 		},
-		Headers: policyv1alpha2.NewHeaders(map[string][]string{
+		Headers: policy.NewHeaders(map[string][]string{
 			"x-tenant": {"tenant-a"},
 		}),
 	}
@@ -799,9 +799,9 @@ func TestKeyExtractionHeaderPhase(t *testing.T) {
 	})
 
 	t.Run("apiname empty falls back to empty string", func(t *testing.T) {
-		emptyCtx := &policyv1alpha2.RequestHeaderContext{
-			SharedContext: &policyv1alpha2.SharedContext{Metadata: map[string]interface{}{}},
-			Headers:       policyv1alpha2.NewHeaders(nil),
+		emptyCtx := &policy.RequestHeaderContext{
+			SharedContext: &policy.SharedContext{Metadata: map[string]interface{}{}},
+			Headers:       policy.NewHeaders(nil),
 		}
 		got := p.extractKeyComponentFromHeaderCtx(emptyCtx, KeyComponent{Type: "apiname"})
 		if got != "" {
@@ -833,7 +833,7 @@ func TestOnRequestBehavior(t *testing.T) {
 		ctx := newRequestCtx(nil, nil)
 
 		action := p.OnRequestBody(ctx, nil)
-		if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 		}
 		if _, ok := ctx.Metadata[rateLimitResultKey]; !ok {
@@ -877,7 +877,7 @@ func TestOnRequestBehavior(t *testing.T) {
 		ctx := newRequestCtx(nil, nil)
 
 		action := p.OnRequestBody(ctx, nil)
-		if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected UpstreamRequestModifications, got %T", action)
 		}
 	})
@@ -992,7 +992,7 @@ func TestOnRequestBehavior(t *testing.T) {
 		ctx := newRequestCtx(nil, nil)
 
 		action := p.OnRequestBody(ctx, nil)
-		if _, ok := action.(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := action.(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected upstream action, got %T", action)
 		}
 		results, ok := ctx.Metadata[rateLimitResultKey].([]quotaResult)
@@ -1034,7 +1034,7 @@ func TestOnRequestBehavior(t *testing.T) {
 		}})
 		p.backend = "redis"
 		p.redisFailOpen = true
-		if _, ok := p.OnRequestBody(newRequestCtx(nil, nil), nil).(policyv1alpha2.UpstreamRequestModifications); !ok {
+		if _, ok := p.OnRequestBody(newRequestCtx(nil, nil), nil).(policy.UpstreamRequestModifications); !ok {
 			t.Fatalf("expected fail-open upstream action")
 		}
 	})
@@ -1767,12 +1767,12 @@ func TestBugHunt_APIScopedLimiterCacheCollisionAcrossAlgorithms(t *testing.T) {
 	clearCaches()
 	defer clearCaches()
 
-	metadataFixed := policyv1alpha2.PolicyMetadata{
+	metadataFixed := policy.PolicyMetadata{
 		RouteName:  "route-fixed",
 		APIName:    "api-a",
 		APIVersion: "v1",
 	}
-	metadataGCRA := policyv1alpha2.PolicyMetadata{
+	metadataGCRA := policy.PolicyMetadata{
 		RouteName:  "route-gcra",
 		APIName:    "api-a",
 		APIVersion: "v1",
@@ -1905,7 +1905,7 @@ func TestBugHunt_UnknownBackendShouldFailValidation(t *testing.T) {
 		},
 	}
 
-	if _, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "route-backend"}, params); err == nil {
+	if _, err := GetPolicy(policy.PolicyMetadata{RouteName: "route-backend"}, params); err == nil {
 		t.Fatal("BUG: unknown backend accepted and silently treated as memory")
 	}
 }
@@ -2029,7 +2029,7 @@ func TestBugHunt_GCRAZeroLimitShouldNotPanicOnRequest(t *testing.T) {
 		},
 	}
 
-	p, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "route-zero", APIName: "api-zero", APIVersion: "v1"}, params)
+	p, err := GetPolicy(policy.PolicyMetadata{RouteName: "route-zero", APIName: "api-zero", APIVersion: "v1"}, params)
 	if err != nil {
 		// Ideal behavior: reject invalid config at creation time.
 		return
@@ -2083,7 +2083,7 @@ func TestBugHunt_InvalidExceededResponseValuesShouldFailValidation(t *testing.T)
 		},
 	}
 
-	if _, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "route-invalid-exceeded"}, params); err == nil {
+	if _, err := GetPolicy(policy.PolicyMetadata{RouteName: "route-invalid-exceeded"}, params); err == nil {
 		t.Fatal("BUG: invalid onRateLimitExceeded.statusCode/bodyFormat accepted without validation")
 	}
 }
@@ -2112,7 +2112,7 @@ func TestBugHunt_InvalidRedisFailureModeShouldFailValidation(t *testing.T) {
 		},
 	}
 
-	_, err := GetPolicy(policyv1alpha2.PolicyMetadata{RouteName: "route-invalid-failure-mode"}, params)
+	_, err := GetPolicy(policy.PolicyMetadata{RouteName: "route-invalid-failure-mode"}, params)
 	if err == nil {
 		t.Fatal("BUG: invalid redis.failureMode accepted without validation")
 	}

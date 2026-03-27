@@ -23,16 +23,16 @@ import (
 	"log/slog"
 	"sort"
 
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	utils "github.com/wso2/api-platform/sdk/core/utils"
 )
 
 // OnRequestBody is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
-func (p *SemanticToolFilteringPolicy) OnRequestBody(ctx *policyv1alpha2.RequestContext, _ map[string]interface{}) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) OnRequestBody(ctx *policy.RequestContext, _ map[string]interface{}) policy.RequestAction {
 	return p.processRequestBody(ctx)
 }
 
-func (p *SemanticToolFilteringPolicy) processRequestBody(ctx *policyv1alpha2.RequestContext) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) processRequestBody(ctx *policy.RequestContext) policy.RequestAction {
 	var content []byte
 	if ctx.Body != nil {
 		content = ctx.Body.Content
@@ -40,7 +40,7 @@ func (p *SemanticToolFilteringPolicy) processRequestBody(ctx *policyv1alpha2.Req
 
 	if len(content) == 0 {
 		slog.Debug("SemanticToolFiltering: Empty request body")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Handle based on format type (JSON or Text)
@@ -57,7 +57,7 @@ func (p *SemanticToolFilteringPolicy) processRequestBody(ctx *policyv1alpha2.Req
 }
 
 // handleJSONRequest handles requests where both user query and tools are in JSON format (v1alpha2)
-func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policyv1alpha2.RequestContext, content []byte) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policy.RequestContext, content []byte) policy.RequestAction {
 	// Parse request body as JSON
 	var requestBody map[string]interface{}
 	if err := json.Unmarshal(content, &requestBody); err != nil {
@@ -72,7 +72,7 @@ func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policyv1alpha2.Requ
 
 	if userQuery == "" {
 		slog.Debug("SemanticToolFiltering: Empty user query")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Extract tools array using JSONPath
@@ -102,7 +102,7 @@ func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policyv1alpha2.Requ
 
 	if len(tools) == 0 {
 		slog.Debug("SemanticToolFiltering: No tools to filter")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Generate embedding for user query
@@ -175,7 +175,7 @@ func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policyv1alpha2.Requ
 
 	if len(toolsWithScores) == 0 {
 		slog.Debug("SemanticToolFiltering: No valid tools after embedding generation")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Filter tools based on selection mode
@@ -197,13 +197,13 @@ func (p *SemanticToolFilteringPolicy) handleJSONRequest(ctx *policyv1alpha2.Requ
 		return p.buildErrorResponse("Error marshaling modified request body", err)
 	}
 
-	return policyv1alpha2.UpstreamRequestModifications{
+	return policy.UpstreamRequestModifications{
 		Body: modifiedBody,
 	}
 }
 
 // handleTextRequest handles requests where both user query and tools are in text format with tags (v1alpha2)
-func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policyv1alpha2.RequestContext, content []byte) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policy.RequestContext, content []byte) policy.RequestAction {
 	contentStr := string(content)
 
 	// Extract user query from <userq> tags
@@ -214,7 +214,7 @@ func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policyv1alpha2.Requ
 
 	if userQuery == "" {
 		slog.Debug("SemanticToolFiltering: Empty user query")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Extract tools from <toolname> and <tooldescription> tags
@@ -225,7 +225,7 @@ func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policyv1alpha2.Requ
 
 	if len(textTools) == 0 {
 		slog.Debug("SemanticToolFiltering: No tools to filter")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Generate embedding for user query
@@ -289,7 +289,7 @@ func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policyv1alpha2.Requ
 
 	if len(toolsWithScores) == 0 {
 		slog.Debug("SemanticToolFiltering: No valid tools after embedding generation")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Sort by score in descending order
@@ -326,13 +326,13 @@ func (p *SemanticToolFilteringPolicy) handleTextRequest(ctx *policyv1alpha2.Requ
 		"filteredCount", len(filteredToolNames),
 		"selectionMode", p.selectionMode)
 
-	return policyv1alpha2.UpstreamRequestModifications{
+	return policy.UpstreamRequestModifications{
 		Body: []byte(modifiedContent),
 	}
 }
 
 // handleMixedRequest handles requests where user query and tools have different formats (v1alpha2)
-func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.RequestContext, content []byte) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policy.RequestContext, content []byte) policy.RequestAction {
 	// For mixed mode, parse based on each component's format
 	contentStr := string(content)
 	var userQuery string
@@ -357,7 +357,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 
 	if userQuery == "" {
 		slog.Debug("SemanticToolFiltering: Empty user query")
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 
 	// Generate embedding for user query
@@ -406,7 +406,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 
 		if len(tools) == 0 {
 			slog.Debug("SemanticToolFiltering: No tools to filter")
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 
 		var embeddingRequests []toolEmbeddingRequest
@@ -459,7 +459,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 
 		if len(toolsWithScores) == 0 {
 			slog.Debug("SemanticToolFiltering: No valid tools after embedding generation")
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 
 		filteredTools := p.filterTools(toolsWithScores)
@@ -473,7 +473,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 			return p.buildErrorResponse("Error marshaling modified request body", err)
 		}
 
-		return policyv1alpha2.UpstreamRequestModifications{
+		return policy.UpstreamRequestModifications{
 			Body: modifiedBody,
 		}
 	} else {
@@ -485,7 +485,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 
 		if len(textTools) == 0 {
 			slog.Debug("SemanticToolFiltering: No tools to filter")
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 
 		var embeddingRequests []toolEmbeddingRequest
@@ -531,7 +531,7 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 
 		if len(toolsWithScores) == 0 {
 			slog.Debug("SemanticToolFiltering: No valid tools after embedding generation")
-			return policyv1alpha2.UpstreamRequestModifications{}
+			return policy.UpstreamRequestModifications{}
 		}
 
 		sort.Slice(toolsWithScores, func(i, j int) bool {
@@ -560,14 +560,14 @@ func (p *SemanticToolFilteringPolicy) handleMixedRequest(ctx *policyv1alpha2.Req
 		modifiedContent := rebuildTextWithFilteredTools(contentStr, textTools, filteredToolNames)
 		modifiedContent = stripAllTags(modifiedContent)
 
-		return policyv1alpha2.UpstreamRequestModifications{
+		return policy.UpstreamRequestModifications{
 			Body: []byte(modifiedContent),
 		}
 	}
 }
 
 // buildErrorResponse builds an error response for v1alpha2
-func (p *SemanticToolFilteringPolicy) buildErrorResponse(message string, err error) policyv1alpha2.RequestAction {
+func (p *SemanticToolFilteringPolicy) buildErrorResponse(message string, err error) policy.RequestAction {
 	// Log a warning with error details for diagnostics, but do not expose
 	// internal error details to clients. Continue the request unmodified.
 	if err != nil {
@@ -577,5 +577,5 @@ func (p *SemanticToolFilteringPolicy) buildErrorResponse(message string, err err
 	}
 
 	// Return a pass-through action so the original request proceeds unchanged.
-	return policyv1alpha2.UpstreamRequestModifications{}
+	return policy.UpstreamRequestModifications{}
 }

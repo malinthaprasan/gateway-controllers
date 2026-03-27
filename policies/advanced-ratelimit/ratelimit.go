@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
-	policyv1alpha2 "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
+	policy "github.com/wso2/api-platform/sdk/core/policy/v1alpha2"
 	_ "github.com/wso2/gateway-controllers/policies/advanced-ratelimit/algorithms/fixedwindow" // Register Fixed Window algorithm
 	_ "github.com/wso2/gateway-controllers/policies/advanced-ratelimit/algorithms/gcra"        // Register GCRA algorithm
 	"github.com/wso2/gateway-controllers/policies/advanced-ratelimit/limiter"
@@ -99,7 +99,7 @@ type RateLimitPolicy struct {
 	apiId          string         // From metadata, API identifier
 	apiName        string         // From metadata, API name for scope-based caching
 	apiVersion     string         // From metadata, API version
-	attachedTo     policyv1alpha2.Level // From metadata, whether policy is attached at API or route level
+	attachedTo     policy.Level // From metadata, whether policy is attached at API or route level
 	baseCacheKey   string         // Base cache key for tracking limiters in memory backend
 	statusCode     int
 	responseBody   string
@@ -114,9 +114,9 @@ type RateLimitPolicy struct {
 
 // GetPolicy is the v1alpha2 factory entry point (loaded by v1alpha2 kernels).
 func GetPolicy(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	slog.Debug("Creating rate limit policy",
 		"route", metadata.RouteName,
 		"apiName", metadata.APIName,
@@ -412,27 +412,27 @@ func GetPolicy(
 
 // GetPolicyV2 delegates to GetPolicy.
 func GetPolicyV2(
-	metadata policyv1alpha2.PolicyMetadata,
+	metadata policy.PolicyMetadata,
 	params map[string]interface{},
-) (policyv1alpha2.Policy, error) {
+) (policy.Policy, error) {
 	return GetPolicy(metadata, params)
 }
 
-func (p *RateLimitPolicy) Mode() policyv1alpha2.ProcessingMode {
-	requestBodyMode := policyv1alpha2.BodyModeSkip
-	responseBodyMode := policyv1alpha2.BodyModeSkip
+func (p *RateLimitPolicy) Mode() policy.ProcessingMode {
+	requestBodyMode := policy.BodyModeSkip
+	responseBodyMode := policy.BodyModeSkip
 
 	if p.requiresRequestBody() {
-		requestBodyMode = policyv1alpha2.BodyModeBuffer
+		requestBodyMode = policy.BodyModeBuffer
 	}
 	if p.requiresResponseBody() {
-		responseBodyMode = policyv1alpha2.BodyModeBuffer
+		responseBodyMode = policy.BodyModeBuffer
 	}
 
-	return policyv1alpha2.ProcessingMode{
-		RequestHeaderMode:  policyv1alpha2.HeaderModeProcess,
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
 		RequestBodyMode:    requestBodyMode,
-		ResponseHeaderMode: policyv1alpha2.HeaderModeProcess,
+		ResponseHeaderMode: policy.HeaderModeProcess,
 		ResponseBodyMode:   responseBodyMode,
 	}
 }
@@ -575,7 +575,7 @@ func (p *RateLimitPolicy) buildRateLimitResponse(
 	violatedResult *limiter.Result,
 	violatedQuotaName string,
 	allResults []quotaResult,
-) policyv1alpha2.ImmediateResponse {
+) policy.ImmediateResponse {
 	// If we have all results, use the multi-quota header builder
 	var headers map[string]string
 	if len(allResults) > 0 {
@@ -620,7 +620,7 @@ func (p *RateLimitPolicy) buildRateLimitResponse(
 		headers["x-ratelimit-quota"] = violatedQuotaName
 	}
 
-	return policyv1alpha2.ImmediateResponse{
+	return policy.ImmediateResponse{
 		StatusCode: p.statusCode,
 		Headers:    headers,
 		Body:       []byte(p.responseBody),
@@ -1066,7 +1066,7 @@ func getQuotaCacheKey(base, apiName string, q *QuotaRuntime, index int) string {
 // OnRequestHeaders performs the rate limit check in the header phase for quotas that do not
 // require request body or CEL-based key extraction. Quotas needing the body (cost extraction
 // from request_body / request_cel) or CEL key extraction are deferred to OnRequest.
-func (p *RateLimitPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext, params map[string]interface{}) policyv1alpha2.RequestHeaderAction {
+func (p *RateLimitPolicy) OnRequestHeaders(ctx *policy.RequestHeaderContext, params map[string]interface{}) policy.RequestHeaderAction {
 	slog.Debug("Rate limit header phase check started",
 		"route", p.routeName,
 		"quotaCount", len(p.quotas))
@@ -1154,12 +1154,12 @@ func (p *RateLimitPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderCont
 	ctx.Metadata[rateLimitKeysKey] = quotaKeys
 	ctx.Metadata[rateLimitHeaderHandledKey] = handledQuotas
 
-	return policyv1alpha2.UpstreamRequestHeaderModifications{}
+	return policy.UpstreamRequestHeaderModifications{}
 }
 
 // extractQuotaKeyFromHeaderCtx builds the rate limit key from header-phase context.
 // Supports all key types except "cel" (which requires full RequestContext).
-func (p *RateLimitPolicy) extractQuotaKeyFromHeaderCtx(ctx *policyv1alpha2.RequestHeaderContext, q *QuotaRuntime) string {
+func (p *RateLimitPolicy) extractQuotaKeyFromHeaderCtx(ctx *policy.RequestHeaderContext, q *QuotaRuntime) string {
 	if len(q.KeyExtraction) == 0 {
 		slog.Debug("No key extraction configured, using route name",
 			"routeName", p.routeName)
@@ -1188,7 +1188,7 @@ func (p *RateLimitPolicy) extractQuotaKeyFromHeaderCtx(ctx *policyv1alpha2.Reque
 }
 
 // extractKeyComponentFromHeaderCtx extracts a single key component from header-phase context.
-func (p *RateLimitPolicy) extractKeyComponentFromHeaderCtx(ctx *policyv1alpha2.RequestHeaderContext, comp KeyComponent) string {
+func (p *RateLimitPolicy) extractKeyComponentFromHeaderCtx(ctx *policy.RequestHeaderContext, comp KeyComponent) string {
 	switch comp.Type {
 	case "header":
 		values := ctx.Headers.Get(strings.ToLower(comp.Key))
@@ -1247,9 +1247,9 @@ func (p *RateLimitPolicy) extractKeyComponentFromHeaderCtx(ctx *policyv1alpha2.R
 
 // OnRequestBody performs rate limit check across all quotas.
 func (p *RateLimitPolicy) OnRequestBody(
-	ctx *policyv1alpha2.RequestContext,
+	ctx *policy.RequestContext,
 	_ map[string]interface{},
-) policyv1alpha2.RequestAction {
+) policy.RequestAction {
 	if p.requiresRequestBody() {
 		slog.Debug("Rate limit check started",
 			"route", p.routeName,
@@ -1412,16 +1412,16 @@ func (p *RateLimitPolicy) OnRequestBody(
 		ctx.Metadata[rateLimitResultKey] = quotaResults
 		ctx.Metadata[rateLimitKeysKey] = quotaKeys
 
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	} else {
-		return policyv1alpha2.UpstreamRequestModifications{}
+		return policy.UpstreamRequestModifications{}
 	}
 }
 
 // OnResponseHeaders adds rate limit headers in the response header phase using results
 // already available from the request phase. Response-phase cost extraction quotas will
 // have their final values updated by OnResponse once the body is processed.
-func (p *RateLimitPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderContext, params map[string]interface{}) policyv1alpha2.ResponseHeaderAction {
+func (p *RateLimitPolicy) OnResponseHeaders(ctx *policy.ResponseHeaderContext, params map[string]interface{}) policy.ResponseHeaderAction {
 	slog.Debug("Processing rate limit response phase",
 		"route", p.routeName,
 		"status", ctx.ResponseStatus,
@@ -1476,7 +1476,7 @@ func (p *RateLimitPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderCo
 			// Extract actual cost from response
 			// OnResponseHeaders only has ResponseHeaderContext, so construct a ResponseContext
 			// with available fields (ResponseBody will be nil at this phase).
-			responseCtx := &policyv1alpha2.ResponseContext{
+			responseCtx := &policy.ResponseContext{
 				SharedContext:   ctx.SharedContext,
 				RequestHeaders:  ctx.RequestHeaders,
 				RequestBody:     ctx.RequestBody,
@@ -1576,8 +1576,8 @@ func (p *RateLimitPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderCo
 		return nil
 	}
 
-	return policyv1alpha2.DownstreamResponseModifications{
-		DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
+	return policy.DownstreamResponseModifications{
+		DownstreamResponseHeaderModifications: policy.DownstreamResponseHeaderModifications{
 			HeadersToSet: headers,
 		},
 	}
@@ -1590,9 +1590,9 @@ func (p *RateLimitPolicy) OnResponseHeaders(ctx *policyv1alpha2.ResponseHeaderCo
 // response policies in reverse chain order, so policies appended after this one
 // run first — ensuring cost metadata is available when this method executes.
 func (p *RateLimitPolicy) OnResponseBody(
-	ctx *policyv1alpha2.ResponseContext,
+	ctx *policy.ResponseContext,
 	_ map[string]interface{},
-) policyv1alpha2.ResponseAction {
+) policy.ResponseAction {
 	if p.requiresResponseBody() {
 		slog.Debug("Processing rate limit response phase",
 			"route", p.routeName,
@@ -1737,16 +1737,16 @@ func (p *RateLimitPolicy) OnResponseBody(
 			return nil
 		}
 
-		return policyv1alpha2.DownstreamResponseModifications{
-			DownstreamResponseHeaderModifications: policyv1alpha2.DownstreamResponseHeaderModifications{
+		return policy.DownstreamResponseModifications{
+			DownstreamResponseHeaderModifications: policy.DownstreamResponseHeaderModifications{
 				HeadersToSet: headers,
 			},
 		}
 	}
-	return policyv1alpha2.DownstreamResponseModifications{}
+	return policy.DownstreamResponseModifications{}
 }
 
-func (p *RateLimitPolicy) extractQuotaKey(ctx *policyv1alpha2.RequestContext, q *QuotaRuntime) string {
+func (p *RateLimitPolicy) extractQuotaKey(ctx *policy.RequestContext, q *QuotaRuntime) string {
 	if len(q.KeyExtraction) == 0 {
 		slog.Debug("No key extraction configured, using route name",
 			"routeName", p.routeName)
@@ -1775,7 +1775,7 @@ func (p *RateLimitPolicy) extractQuotaKey(ctx *policyv1alpha2.RequestContext, q 
 }
 
 // extractKeyComponent extracts a single component value
-func (p *RateLimitPolicy) extractKeyComponent(ctx *policyv1alpha2.RequestContext, comp KeyComponent) string {
+func (p *RateLimitPolicy) extractKeyComponent(ctx *policy.RequestContext, comp KeyComponent) string {
 	switch comp.Type {
 	case "header":
 		values := ctx.Headers.Get(strings.ToLower(comp.Key))
@@ -1841,7 +1841,7 @@ func (p *RateLimitPolicy) extractKeyComponent(ctx *policyv1alpha2.RequestContext
 }
 
 // extractIPAddress extracts client IP from headers
-func (p *RateLimitPolicy) extractIPAddress(headers *policyv1alpha2.Headers) string {
+func (p *RateLimitPolicy) extractIPAddress(headers *policy.Headers) string {
 	// Try X-Forwarded-For first (most common)
 	if xff := headers.Get("x-forwarded-for"); len(xff) > 0 && xff[0] != "" {
 		// Take the first IP (client)
