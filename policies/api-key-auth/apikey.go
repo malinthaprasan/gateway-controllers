@@ -116,7 +116,17 @@ func (p *APIKeyPolicy) OnRequestHeaders(ctx *policyv1alpha2.RequestHeaderContext
 	if errResp := p.authenticate(ctx.SharedContext, ctx.Headers, ctx.Path, ctx.Method, params); errResp != nil {
 		return *errResp
 	}
-	return policyv1alpha2.UpstreamRequestHeaderModifications{}
+
+	keyName, _ := params["key"].(string)
+	location, _ := params["in"].(string)
+
+	mods := policyv1alpha2.UpstreamRequestHeaderModifications{}
+	if location == "header" {
+		mods.HeadersToRemove = []string{http.CanonicalHeaderKey(keyName)}
+	} else if location == "query" {
+		mods.QueryParametersToRemove = []string{keyName}
+	}
+	return mods
 }
 
 // authenticate is the shared core logic for OnRequestHeaders.
