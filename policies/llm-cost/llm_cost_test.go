@@ -1807,6 +1807,36 @@ func TestSetCostMetadataV2_Formatting(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// setStreamCostMetadata formatting
+// ---------------------------------------------------------------------------
+
+func TestSetStreamCostMetadata_Formatting(t *testing.T) {
+	cases := []struct {
+		cost     float64
+		expected string
+	}{
+		{0.0, "0.0000000000"},
+		{0.00004231, "0.0000423100"},
+		{1.23456789012345, "1.2345678901"},
+	}
+	for _, tc := range cases {
+		ctx := makeStreamResponseContext()
+		action := setStreamCostMetadata(ctx, tc.cost, costStatusCalculated)
+		if action.AnalyticsMetadata == nil {
+			t.Fatalf("expected AnalyticsMetadata in ResponseChunkAction")
+		}
+		got, _ := ctx.Metadata[MetadataLLMCost].(string)
+		if got != tc.expected {
+			t.Errorf("cost=%.15f: expected metadata %q, got %q", tc.cost, tc.expected, got)
+		}
+		gotStatus, _ := ctx.Metadata[MetadataLLMCostStatus].(string)
+		if gotStatus != costStatusCalculated {
+			t.Errorf("expected status %q, got %q", costStatusCalculated, gotStatus)
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
 // OnResponseBody -- cost status
 // ---------------------------------------------------------------------------
 
@@ -1882,6 +1912,76 @@ func TestOnResponseBody_UnknownModel_NotCalculated(t *testing.T) {
 	body := []byte(`{"model": "totally-unknown-model-xyz", "usage": {"prompt_tokens": 10}}`)
 	ctx := makeResponseContext(body)
 	assertCostMetadata(t, ctx, p.OnResponseBody(context.Background(), ctx, nil), costStatusNotCalculated, "0.0000000000")
+}
+
+// ---------------------------------------------------------------------------
+// OnResponseBodyChunk -- cost status
+// ---------------------------------------------------------------------------
+
+func makeStreamResponseContext() *policy.ResponseStreamContext {
+	return &policy.ResponseStreamContext{
+		SharedContext: &policy.SharedContext{
+			Metadata: make(map[string]interface{}),
+		},
+	}
+}
+
+func assertStreamCostMetadata(t *testing.T, respCtx *policy.ResponseStreamContext, action policy.ResponseChunkAction, wantStatus string, wantCost string) {
+	t.Helper()
+	gotStatus, _ := respCtx.Metadata[MetadataLLMCostStatus].(string)
+	if gotStatus != wantStatus {
+		t.Errorf("x-llm-cost-status: expected %q, got %q", wantStatus, gotStatus)
+	}
+	if wantCost != "" {
+		gotCost, _ := respCtx.Metadata[MetadataLLMCost].(string)
+		if gotCost != wantCost {
+			t.Errorf("x-llm-cost: expected %q, got %q", wantCost, gotCost)
+		}
+	}
+}
+
+func invokeWithBody(p *LLMCostPolicy, body []byte) (*policy.ResponseStreamContext, policy.ResponseChunkAction) {
+	ctx := makeStreamResponseContext()
+	action := p.OnResponseBodyChunk(context.Background(), ctx, &policy.StreamBody{Chunk: body, EndOfStream: true}, nil)
+	return ctx, action
+}
+
+func TestOnResponseBodyChunk_SuccessStatus_Calculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	body := []byte(`{
+		"model": "gpt-4o-mini-2024-07-18",
+		"usage": {"prompt_tokens": 10, "completion_tokens": 5, "total_tokens": 15}
+	}`)
+	ctx, action := invokeWithBody(p, body)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "")
+	// Also verify the cost metadata is non-empty (exact value tested in calculator tests).
+	if gotCost, _ := ctx.Metadata[MetadataLLMCost].(string); gotCost == "" {
+		t.Error("expected non-empty x-llm-cost in metadata")
+	}
+}
+
+func TestOnResponseBodyChunk_EmptyBody_NotCalculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	ctx, action := invokeWithBody(p, nil)
+	assertStreamCostMetadata(t, ctx, action, costStatusNotCalculated, "0.0000000000")
+}
+
+func TestOnResponseBodyChunk_UnparsableBody_NotCalculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	ctx, action := invokeWithBody(p, []byte("not json"))
+	assertStreamCostMetadata(t, ctx, action, costStatusNotCalculated, "0.0000000000")
+}
+
+func TestOnResponseBodyChunk_NoModelName_NotCalculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	ctx, action := invokeWithBody(p, []byte(`{"usage": {"prompt_tokens": 10}}`))
+	assertStreamCostMetadata(t, ctx, action, costStatusNotCalculated, "0.0000000000")
+}
+
+func TestOnResponseBodyChunk_UnknownModel_NotCalculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	ctx, action := invokeWithBody(p, []byte(`{"model": "totally-unknown-model-xyz", "usage": {"prompt_tokens": 10}}`))
+	assertStreamCostMetadata(t, ctx, action, costStatusNotCalculated, "0.0000000000")
 }
 
 // ---------------------------------------------------------------------------
@@ -2223,4 +2323,168 @@ func TestOnResponseBody_SSE_NoUsage_NotCalculated(t *testing.T) {
 	action := p.OnResponseBody(context.Background(), ctx, nil)
 	// Without usage data, cost should be calculated as 0 tokens (not a parse failure)
 	assertCostMetadata(t, ctx, action, costStatusCalculated, "0.0000000000")
+}
+
+func TestOnResponseBodyChunk_SSE_OpenAI_Calculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	sseBody := []byte(
+		"data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini-2024-07-18\",\"service_tier\":\"default\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"Hi\"}}]}\n" +
+			"data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini-2024-07-18\",\"service_tier\":\"default\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}\n" +
+			"data: [DONE]\n",
+	)
+	ctx, action := invokeWithBody(p, sseBody)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "")
+	if gotCost, _ := ctx.Metadata[MetadataLLMCost].(string); gotCost == "" {
+		t.Error("expected non-empty x-llm-cost for SSE OpenAI response")
+	}
+}
+
+func TestOnResponseBodyChunk_SSE_NoUsage_NotCalculated(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	// SSE stream without any usage block (include_usage was not set)
+	sseBody := []byte(
+		"data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini-2024-07-18\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hi\"}}]}\n" +
+			"data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini-2024-07-18\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n" +
+			"data: [DONE]\n",
+	)
+	ctx, action := invokeWithBody(p, sseBody)
+	// Without usage data, cost should be calculated as 0 tokens (not a parse failure)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "0.0000000000")
+}
+
+// ---------------------------------------------------------------------------
+// Multi-chunk SSE streaming tests — events sent one per OnResponseBodyChunk call
+// ---------------------------------------------------------------------------
+
+// sendSSEChunksOneByOne sends each SSE event JSON as a separate non-EOS chunk,
+// then sends a final EOS chunk with "data: [DONE]". This exercises the
+// accumulation logic in OnResponseBodyChunk across multiple network packets.
+func sendSSEChunksOneByOne(p *LLMCostPolicy, eventJSONs []string) (*policy.ResponseStreamContext, policy.ResponseChunkAction) {
+	ctx := makeStreamResponseContext()
+	var action policy.ResponseChunkAction
+	for i, eventJSON := range eventJSONs {
+		action = p.OnResponseBodyChunk(context.Background(), ctx, &policy.StreamBody{
+			Chunk: []byte("data: " + eventJSON + "\n"),
+			Index: uint64(i),
+		}, nil)
+	}
+	// Final EOS chunk — triggers cost calculation.
+	action = p.OnResponseBodyChunk(context.Background(), ctx, &policy.StreamBody{
+		Chunk:       []byte("data: [DONE]\n"),
+		EndOfStream: true,
+		Index:       uint64(len(eventJSONs)),
+	}, nil)
+	return ctx, action
+}
+
+// TestOnResponseBodyChunk_SSE_IntermediateChunksDoNotSetCost verifies that
+// non-EOS chunks do not trigger cost calculation; only the final EOS chunk does.
+func TestOnResponseBodyChunk_SSE_IntermediateChunksDoNotSetCost(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	ctx := makeStreamResponseContext()
+
+	events := []string{
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","model":"gpt-4o-mini-2024-07-18","choices":[{"index":0,"delta":{"role":"assistant","content":""}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","model":"gpt-4o-mini-2024-07-18","choices":[{"index":0,"delta":{"content":"Hi"}}]}`,
+	}
+
+	// Send intermediate chunks — cost metadata must NOT be set yet.
+	for i, ev := range events {
+		action := p.OnResponseBodyChunk(context.Background(), ctx, &policy.StreamBody{
+			Chunk: []byte("data: " + ev + "\n"),
+			Index: uint64(i),
+		}, nil)
+		if _, ok := ctx.Metadata[MetadataLLMCostStatus]; ok {
+			t.Fatalf("chunk %d: cost status was set before EndOfStream", i)
+		}
+		if len(action.AnalyticsMetadata) != 0 {
+			t.Fatalf("chunk %d: unexpected analytics metadata on intermediate chunk", i)
+		}
+	}
+
+	// Final EOS chunk — cost must now be set.
+	eosAction := p.OnResponseBodyChunk(context.Background(), ctx, &policy.StreamBody{
+		Chunk:       []byte("data: {\"id\":\"chatcmpl-1\",\"object\":\"chat.completion.chunk\",\"model\":\"gpt-4o-mini-2024-07-18\",\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5,\"total_tokens\":15}}\ndata: [DONE]\n"),
+		EndOfStream: true,
+		Index:       uint64(len(events)),
+	}, nil)
+	assertStreamCostMetadata(t, ctx, eosAction, costStatusCalculated, "0.0000045000")
+}
+
+// TestOnResponseBodyChunk_SSE_OpenAI_MultiChunk sends three OpenAI SSE events as
+// separate chunks and verifies the cost is calculated correctly at EndOfStream.
+// gpt-4o-mini-2024-07-18: input=1.5e-7, output=6e-7
+// 10 * 1.5e-7 + 5 * 6e-7 = 4.5e-6 → "0.0000045000"
+func TestOnResponseBodyChunk_SSE_OpenAI_MultiChunk(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	events := []string{
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","model":"gpt-4o-mini-2024-07-18","choices":[{"index":0,"delta":{"role":"assistant","content":""}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","model":"gpt-4o-mini-2024-07-18","choices":[{"index":0,"delta":{"content":"Hi"}}]}`,
+		`{"id":"chatcmpl-1","object":"chat.completion.chunk","model":"gpt-4o-mini-2024-07-18","choices":[],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}`,
+	}
+	ctx, action := sendSSEChunksOneByOne(p, events)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "0.0000045000")
+}
+
+// TestOnResponseBodyChunk_SSE_Anthropic_MultiChunk sends six Anthropic SSE events
+// as separate chunks. This is the key cross-event merge test: input tokens arrive
+// in message_start (events[0].message.usage.input_tokens) while output tokens
+// arrive in message_delta (events[4].usage.output_tokens).
+// claude-3-5-haiku-20241022: input=8e-7, output=4e-6
+// 10 * 8e-7 + 5 * 4e-6 = 28e-6 → "0.0000280000"
+func TestOnResponseBodyChunk_SSE_Anthropic_MultiChunk(t *testing.T) {
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	events := []string{
+		`{"type":"message_start","message":{"id":"msg_01","type":"message","role":"assistant","model":"claude-3-5-haiku-20241022","usage":{"input_tokens":10,"output_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}`,
+		`{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`,
+		`{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Hi"}}`,
+		`{"type":"content_block_stop","index":0}`,
+		`{"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}`,
+		`{"type":"message_stop"}`,
+	}
+	ctx, action := sendSSEChunksOneByOne(p, events)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "0.0000280000")
+}
+
+// TestOnResponseBodyChunk_SSE_Gemini_MultiChunk sends two Gemini SSE events as
+// separate chunks. Gemini reports cumulative usageMetadata in every chunk so the
+// last chunk's values are used. modelVersion is used instead of model.
+// gemini/gemini-1.5-flash: input=7.5e-8, output=3e-7
+// 10 * 7.5e-8 + 5 * 3e-7 = 2.25e-6 → "0.0000022500"
+func TestOnResponseBodyChunk_SSE_Gemini_MultiChunk(t *testing.T) {
+	pricing, ok := lookupPricing(testPricingMap, "gemini/gemini-1.5-flash")
+	if !ok {
+		t.Skip("gemini/gemini-1.5-flash not in pricing map")
+	}
+	_ = pricing
+
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	events := []string{
+		`{"candidates":[{"content":{"parts":[{"text":"Hello"}],"role":"model"}}],"modelVersion":"gemini/gemini-1.5-flash","usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":2,"totalTokenCount":12}}`,
+		`{"candidates":[{"content":{"parts":[{"text":" world"}],"role":"model"},"finishReason":"STOP"}],"modelVersion":"gemini/gemini-1.5-flash","usageMetadata":{"promptTokenCount":10,"candidatesTokenCount":5,"totalTokenCount":15}}`,
+	}
+	ctx, action := sendSSEChunksOneByOne(p, events)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "0.0000022500")
+}
+
+// TestOnResponseBodyChunk_SSE_Mistral_MultiChunk sends three Mistral SSE events as
+// separate chunks. Mistral's format mirrors OpenAI: model in every chunk, usage
+// in the last chunk. lookupPricing auto-prepends "mistral/" for bare model names.
+// mistral-small-latest: input=1e-7, output=3e-7
+// 10 * 1e-7 + 5 * 3e-7 = 2.5e-6 → "0.0000025000"
+func TestOnResponseBodyChunk_SSE_Mistral_MultiChunk(t *testing.T) {
+	pricing, ok := lookupPricing(testPricingMap, "mistral/mistral-small-latest")
+	if !ok {
+		t.Skip("mistral/mistral-small-latest not in pricing map")
+	}
+	_ = pricing
+
+	p := &LLMCostPolicy{pricingMap: testPricingMap}
+	events := []string{
+		`{"id":"cmpl-1","object":"chat.completion.chunk","model":"mistral-small-latest","choices":[{"index":0,"delta":{"role":"assistant","content":""},"finish_reason":null}]}`,
+		`{"id":"cmpl-1","object":"chat.completion.chunk","model":"mistral-small-latest","choices":[{"index":0,"delta":{"content":"Hi"},"finish_reason":null}]}`,
+		`{"id":"cmpl-1","object":"chat.completion.chunk","model":"mistral-small-latest","choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15}}`,
+	}
+	ctx, action := sendSSEChunksOneByOne(p, events)
+	assertStreamCostMetadata(t, ctx, action, costStatusCalculated, "0.0000025000")
 }
