@@ -22,7 +22,10 @@ type stubDelegatePolicy struct {
 }
 
 func (s *stubDelegatePolicy) Mode() policy.ProcessingMode {
-	return policy.ProcessingMode{}
+	return policy.ProcessingMode{
+		RequestHeaderMode:  policy.HeaderModeProcess,
+		ResponseHeaderMode: policy.HeaderModeProcess,
+	}
 }
 
 func (s *stubDelegatePolicy) OnRequestHeaders(
