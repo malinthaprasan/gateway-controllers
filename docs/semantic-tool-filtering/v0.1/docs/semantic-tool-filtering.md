@@ -26,10 +26,10 @@ This policy helps reduce token consumption and improve LLM response quality by s
 | selectionMode | string | Yes | `By Rank` | Method used to filter tools: `By Rank` (selects top-K) or `By Threshold` (selects based on score). |
 | limit | integer | No | `5` | The number of most relevant tools to include (used if selectionMode is `By Rank`). |
 | threshold | number | No | `0.7` | Similarity threshold for filtering (0.0 to 1.0). Only tools with a score above this value are included (used if selectionMode is `By Threshold`). |
-| queryJSONPath | string | No | `$.messages[-1].content` | JSONPath expression to extract the user's query from the request body. |
-| toolsJSONPath | string | No | `$.tools` | JSONPath expression to extract the tools array from the request body (used when `toolsIsJson` is true). |
-| userQueryIsJson | boolean | No | `true` | Specifies format of user query. `true`: use `queryJSONPath`. `false`: extract from text using `<userq>` tags. |
-| toolsIsJson | boolean | No | `true` | Specifies format of tools definition. `true`: use `toolsJSONPath`. `false`: extract from text using `<toolname>`/`<tooldescription>` tags. |
+| queryJSONPath | string | Yes | `$.messages[-1].content` | JSONPath expression to extract the user's query from the request body. |
+| toolsJSONPath | string | Yes | `$.tools` | JSONPath expression to extract the tools array from the request body (used when `toolsIsJson` is true). |
+| userQueryIsJson | boolean | Yes | `true` | Specifies format of user query. `true`: use `queryJSONPath`. `false`: extract from text using `<userq>` tags. |
+| toolsIsJson | boolean | Yes | `true` | Specifies format of tools definition. `true`: use `toolsJSONPath`. `false`: extract from text using `<toolname>`/`<tooldescription>` tags. |
 
 ### System Parameters (From config.toml)
 
