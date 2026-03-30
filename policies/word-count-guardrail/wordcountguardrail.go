@@ -44,6 +44,7 @@ const (
 	sseEventPrefix           = "event:"
 	metaKeyAccContent        = "wordcountguardrail:accumulated_content"
 	metaKeyAccJsonBody       = "wordcountguardrail:json_body"
+	metaKeyViolated          = "wordcountguardrail:violated"
 	DefaultStreamingJsonPath = "$.choices[0].delta.content"
 )
 
@@ -688,6 +689,10 @@ func (p *WordCountGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, resp
 	if respCtx.Metadata == nil {
 		respCtx.Metadata = make(map[string]interface{})
 	}
+	// If a violation was already reported, drop all subsequent chunks silently.
+	if violated, _ := respCtx.Metadata[metaKeyViolated].(bool); violated {
+		return policy.ResponseChunkAction{}
+	}
 	if !isSSEChunk(chunkStr) {
 		// Plain JSON via chunked transfer (e.g. OpenAI stream:false with Transfer-Encoding: chunked).
 		// Accumulate all chunks and validate the complete body at end of stream.
@@ -744,6 +749,7 @@ func (p *WordCountGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, resp
 			slog.Debug("WordCountGuardrail: max exceeded",
 				"count", count, "max", rp.Max, "chunkIndex", chunk.Index)
 			reason := fmt.Sprintf("word count %d exceeded maximum of %d words", count, rp.Max)
+			respCtx.Metadata[metaKeyViolated] = true
 			return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(reason, rp)}
 		}
 		if isDone && count < rp.Min {
