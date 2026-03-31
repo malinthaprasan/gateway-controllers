@@ -337,6 +337,7 @@ func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, respCtx 
 	}
 
 	chunkStr := string(chunk.Chunk)
+
 	if !isSSEChunk(chunkStr) {
 		// Plain JSON via chunked transfer (e.g. OpenAI stream:false with Transfer-Encoding: chunked).
 		// Accumulate all chunks and validate the complete body at end of stream.
@@ -390,7 +391,7 @@ func (p *RegexGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, respCtx 
 	if violated {
 		slog.Debug("RegexGuardrail: streaming validation failed",
 			"regex", rp.Regex, "invert", rp.Invert, "chunkIndex", chunk.Index)
-		return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(rp)}
+		return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(rp), TerminateStream: true}
 	}
 
 	return policy.ResponseChunkAction{}

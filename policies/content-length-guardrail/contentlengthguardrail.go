@@ -414,6 +414,7 @@ func (p *ContentLengthGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, 
 	}
 
 	chunkStr := string(chunk.Chunk)
+
 	if !isSSEChunk(chunkStr) {
 		// Plain JSON via chunked transfer (e.g. OpenAI stream:false with Transfer-Encoding: chunked).
 		// Accumulate all chunks and validate the complete body at end of stream.
@@ -452,7 +453,7 @@ func (p *ContentLengthGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, 
 		reason := fmt.Sprintf("content length %d bytes is outside the allowed range %d-%d bytes", running, rp.Min, rp.Max)
 		slog.Debug("ContentLengthGuardrail: streaming max violation",
 			"runningBytes", running, "max", rp.Max)
-		return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(reason, rp.ShowAssessment, rp.Min, rp.Max)}
+		return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(reason, rp.ShowAssessment, rp.Min, rp.Max), TerminateStream: true}
 	}
 
 	// At end of stream: perform the complete min/max/invert validation.
@@ -471,7 +472,7 @@ func (p *ContentLengthGuardrailPolicy) OnResponseBodyChunk(ctx context.Context, 
 			}
 			slog.Debug("ContentLengthGuardrail: streaming validation failed",
 				"runningBytes", running, "min", rp.Min, "max", rp.Max, "invert", rp.Invert)
-			return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(reason, rp.ShowAssessment, rp.Min, rp.Max)}
+			return policy.ResponseChunkAction{Body: p.buildSSEErrorEvent(reason, rp.ShowAssessment, rp.Min, rp.Max), TerminateStream: true}
 		}
 	}
 
