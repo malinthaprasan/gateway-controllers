@@ -688,8 +688,8 @@ func TestOnResponseBodyChunk_MaxViolation_EmitsErrorAndTerminates(t *testing.T) 
 	for _, sentence := range []string{"Hello.", " World."} {
 		chunk := &policy.StreamBody{Chunk: []byte(sseEvent(sentence))}
 		got := p.OnResponseBodyChunk(ctx, respCtx, chunk, nil)
-		if got.Body != nil {
-			t.Fatalf("sentence %q: expected passthrough (Body=nil), got %q", sentence, got.Body)
+		if fwd, ok := got.(policy.ForwardResponseChunk); ok && fwd.Body != nil {
+			t.Fatalf("sentence %q: expected passthrough (Body=nil), got %q", sentence, fwd.Body)
 		}
 	}
 
@@ -697,17 +697,21 @@ func TestOnResponseBodyChunk_MaxViolation_EmitsErrorAndTerminates(t *testing.T) 
 	chunk := &policy.StreamBody{Chunk: []byte(sseEvent(" Bye."))}
 	got := p.OnResponseBodyChunk(ctx, respCtx, chunk, nil)
 
-	if got.Body == nil {
+	term, ok := got.(policy.TerminateResponseChunk)
+	if !ok {
+		t.Fatalf("expected TerminateResponseChunk on max violation, got %T", got)
+	}
+	if term.Body == nil {
 		t.Fatal("expected error body on max violation, got nil")
 	}
-	if !got.TerminateStream {
+	if !got.TerminateStream() {
 		t.Fatal("expected TerminateStream=true on max violation")
 	}
-	if !strings.Contains(string(got.Body), "SENTENCE_COUNT_GUARDRAIL") {
-		t.Fatalf("expected SENTENCE_COUNT_GUARDRAIL in error body, got: %s", got.Body)
+	if !strings.Contains(string(term.Body), "SENTENCE_COUNT_GUARDRAIL") {
+		t.Fatalf("expected SENTENCE_COUNT_GUARDRAIL in error body, got: %s", term.Body)
 	}
 	// Parse the SSE event and verify guardrail action fields.
-	msg := mustMessageMap(t, []byte(strings.TrimPrefix(strings.TrimSuffix(string(got.Body), "\n\n"), "data: ")))
+	msg := mustMessageMap(t, []byte(strings.TrimPrefix(strings.TrimSuffix(string(term.Body), "\n\n"), "data: ")))
 	if msg["action"] != "GUARDRAIL_INTERVENED" {
 		t.Fatalf("expected action=GUARDRAIL_INTERVENED, got %#v", msg["action"])
 	}
