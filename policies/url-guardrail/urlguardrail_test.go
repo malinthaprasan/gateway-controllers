@@ -496,11 +496,15 @@ func TestOnResponseBodyChunk_NonSSE_InvalidURL_ReturnsError(t *testing.T) {
 	chunk := &policy.StreamBody{Chunk: body, EndOfStream: true}
 	got := p.OnResponseBodyChunk(ctx, respCtx, chunk, nil)
 
-	if got.Body == nil {
+	term, ok := got.(policy.TerminateResponseChunk)
+	if !ok {
+		t.Fatalf("expected TerminateResponseChunk for invalid URL in non-SSE chunk, got %T", got)
+	}
+	if term.Body == nil {
 		t.Fatal("expected error body for invalid URL in non-SSE chunk, got nil")
 	}
-	if !strings.Contains(string(got.Body), "URL_GUARDRAIL") {
-		t.Fatalf("expected URL_GUARDRAIL in error body, got: %s", got.Body)
+	if !strings.Contains(string(term.Body), "URL_GUARDRAIL") {
+		t.Fatalf("expected URL_GUARDRAIL in error body, got: %s", term.Body)
 	}
 }
 
@@ -537,25 +541,29 @@ func TestOnResponseBodyChunk_InvalidURL_EmitsErrorAndTerminates(t *testing.T) {
 	// Chunk with no URL passes through unmodified.
 	plain := &policy.StreamBody{Chunk: sseContentChunk("no urls here")}
 	got := p.OnResponseBodyChunk(ctx, respCtx, plain, nil)
-	if got.Body != nil {
-		t.Fatalf("expected passthrough for chunk with no URL, got %q", got.Body)
+	if fwd, ok := got.(policy.ForwardResponseChunk); ok && fwd.Body != nil {
+		t.Fatalf("expected passthrough for chunk with no URL, got %q", fwd.Body)
 	}
 
 	// Chunk containing an unreachable URL triggers the guardrail.
 	invalid := &policy.StreamBody{Chunk: sseContentChunk("visit http://127.0.0.1:1 for info")}
 	got = p.OnResponseBodyChunk(ctx, respCtx, invalid, nil)
 
-	if got.Body == nil {
+	term, ok := got.(policy.TerminateResponseChunk)
+	if !ok {
+		t.Fatalf("expected TerminateResponseChunk on invalid URL violation, got %T", got)
+	}
+	if term.Body == nil {
 		t.Fatal("expected error body on invalid URL, got nil")
 	}
-	if !got.TerminateStream {
+	if !got.TerminateStream() {
 		t.Fatal("expected TerminateStream=true on invalid URL violation")
 	}
-	if !strings.Contains(string(got.Body), "URL_GUARDRAIL") {
-		t.Fatalf("expected URL_GUARDRAIL in error body, got: %s", got.Body)
+	if !strings.Contains(string(term.Body), "URL_GUARDRAIL") {
+		t.Fatalf("expected URL_GUARDRAIL in error body, got: %s", term.Body)
 	}
 	// Parse the SSE event and verify guardrail action fields.
-	msg := mustMessageMap(t, []byte(strings.TrimPrefix(strings.TrimSuffix(string(got.Body), "\n\n"), "data: ")))
+	msg := mustMessageMap(t, []byte(strings.TrimPrefix(strings.TrimSuffix(string(term.Body), "\n\n"), "data: ")))
 	if msg["action"] != "GUARDRAIL_INTERVENED" {
 		t.Fatalf("expected action=GUARDRAIL_INTERVENED, got %#v", msg["action"])
 	}
