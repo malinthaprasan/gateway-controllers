@@ -110,7 +110,7 @@ spec:
         methods: [GET]
   policies:
     - name: word-count-guardrail
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -193,7 +193,7 @@ Validate word count on streaming LLM responses using a custom streaming JSONPath
 ```yaml
   policies:
     - name: word-count-guardrail
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

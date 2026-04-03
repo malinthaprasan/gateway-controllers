@@ -73,7 +73,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       # No params specified - defaults to all false (no logging)
   operations:
     - method: GET
@@ -100,7 +100,7 @@ spec:
       url: http://user-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       params:
         request:
           payload: true
@@ -135,7 +135,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       params:
         request:
           payload: true
@@ -163,7 +163,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       params:
         response:
           payload: true
@@ -191,7 +191,7 @@ spec:
       url: http://payment-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       params:
         request:
           payload: true
@@ -231,7 +231,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: log-message
-      version: v0
+      version: v1
       params:
         request:
           payload: true
@@ -263,7 +263,7 @@ spec:
       path: /public-data
       policies:
         - name: log-message
-          version: v0
+          version: v1
           params:
             request:
               headers: true
@@ -275,7 +275,7 @@ spec:
       path: /sensitive-operation
       policies:
         - name: log-message
-          version: v0
+          version: v1
           params:
             request:
               payload: true
@@ -283,7 +283,7 @@ spec:
       path: /debug-endpoint
       policies:
         - name: log-message
-          version: v0
+          version: v1
           params:
             request:
               payload: true
@@ -326,7 +326,7 @@ spec:
         methods: [POST]
   policies:
     - name: log-message
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

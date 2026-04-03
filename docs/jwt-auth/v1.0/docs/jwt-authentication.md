@@ -136,7 +136,7 @@ spec:
       path: /protected
       policies:
         - name: jwt-auth
-          version: v0
+          version: v1
           params:
             issuers:
               - PrimaryIDP
@@ -161,7 +161,7 @@ spec:
       path: /protected
       policies:
         - name: jwt-auth
-          version: v0
+          version: v1
           params:
             issuers:
               - PrimaryIDP
@@ -190,7 +190,7 @@ spec:
       path: /profile
       policies:
         - name: jwt-auth
-          version: v0
+          version: v1
           params:
             issuers:
               - PrimaryIDP
@@ -219,7 +219,7 @@ spec:
       path: /protected
       policies:
         - name: jwt-auth
-          version: v0
+          version: v1
           params:
             issuers:
               - PrimaryIDP
@@ -245,7 +245,7 @@ spec:
       path: /profile
       policies:
         - name: jwt-auth
-          version: v0
+          version: v1
           params:
             issuers:
               - PrimaryIDP

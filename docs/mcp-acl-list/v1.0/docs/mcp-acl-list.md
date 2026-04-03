@@ -97,7 +97,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-acl-list
-      version: v0
+      version: v1
       params:
         tools:
           mode: allow
@@ -125,7 +125,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-acl-list
-      version: v0
+      version: v1
       params:
         resources:
           mode: deny
@@ -153,7 +153,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-acl-list
-      version: v0
+      version: v1
       params:
         tools:
           mode: allow

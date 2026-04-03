@@ -72,7 +72,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: respond
-      version: v0
+      version: v1
       params:
         statusCode: 200
         body: '{"status":"ok","source":"gateway"}'
@@ -118,7 +118,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: respond
-      version: v0
+      version: v1
       params:
         statusCode: 503
         body: '{"error":"Service Unavailable","message":"Scheduled maintenance in progress"}'
@@ -172,7 +172,7 @@ spec:
       path: /users
       policies:
         - name: respond
-          version: v0
+          version: v1
           params:
             statusCode: 200
             body: '[{"id":1,"name":"Alex"},{"id":2,"name":"Sam"}]'
@@ -183,7 +183,7 @@ spec:
       path: /users/{id}
       policies:
         - name: respond
-          version: v0
+          version: v1
           params:
             statusCode: 404
             body: '{"error":"Not Found","message":"User not found"}'
@@ -228,7 +228,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: respond
-      version: v0
+      version: v1
       params:
         statusCode: 202
         body: Accepted by gateway
@@ -271,7 +271,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: respond
-      version: v0
+      version: v1
   operations:
     - method: GET
       path: /ping

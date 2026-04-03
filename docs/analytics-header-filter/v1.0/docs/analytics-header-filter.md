@@ -103,7 +103,7 @@ spec:
         methods: [POST]
         policies:
           - name: analytics-header-filter
-            version: v0
+            version: v1
             params:
               request:
                 mode: deny

@@ -108,7 +108,7 @@ spec:
         methods: [GET]
   policies:
     - name: url-guardrail
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -199,7 +199,7 @@ Validate URLs in streaming LLM responses using a custom streaming JSONPath:
 ```yaml
   policies:
     - name: url-guardrail
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

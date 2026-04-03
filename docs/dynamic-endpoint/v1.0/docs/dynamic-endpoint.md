@@ -102,14 +102,14 @@ spec:
       path: /profiles/*
       policies:
         - name: dynamic-endpoint
-          version: v0
+          version: v1
           params:
             targetUpstream: customer-read
     - method: POST
       path: /profiles
       policies:
         - name: dynamic-endpoint
-          version: v0
+          version: v1
           params:
             targetUpstream: customer-write
 ```

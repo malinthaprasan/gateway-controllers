@@ -78,7 +78,7 @@ spec:
         methods: [POST]
   policies:
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -115,7 +115,7 @@ spec:
         methods: [POST]
   policies:
     - name: llm-cost-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -124,7 +124,7 @@ spec:
               - amount: 10
                 duration: "24h"
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

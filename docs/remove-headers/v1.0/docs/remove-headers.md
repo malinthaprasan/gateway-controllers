@@ -70,7 +70,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         request:
           headers:
@@ -124,7 +124,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         response:
           headers:
@@ -181,7 +181,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         request:
           headers:
@@ -259,7 +259,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: remove-headers
-          version: v0
+          version: v1
           params:
             request:
               headers:
@@ -271,7 +271,7 @@ spec:
       path: /alerts/active
       policies:
         - name: remove-headers
-          version: v0
+          version: v1
           params:
             request:
               headers:
@@ -283,7 +283,7 @@ spec:
       path: /alerts/active
       policies:
         - name: remove-headers
-          version: v0
+          version: v1
           params:
             request:
               headers:
@@ -312,7 +312,7 @@ spec:
   policies:
     # Remove authentication headers
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         request:
           headers:
@@ -321,7 +321,7 @@ spec:
             - name: Cookie
     # Remove server identification
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         response:
           headers:
@@ -329,7 +329,7 @@ spec:
             - name: X-Powered-By
     # Remove debugging headers
     - name: remove-headers
-      version: v0
+      version: v1
       params:
         request:
           headers:

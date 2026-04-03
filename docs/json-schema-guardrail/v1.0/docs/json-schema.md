@@ -102,7 +102,7 @@ spec:
         methods: [GET]
   policies:
     - name: json-schema-guardrail
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

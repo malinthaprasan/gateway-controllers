@@ -93,7 +93,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: subscription-validation
-      version: v0
+      version: v1
       params:
   operations:
     - method: GET
@@ -128,7 +128,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: subscription-validation
-      version: v0
+      version: v1
       params:
         subscriptionKeyHeader: X-Subscription-Token
   operations:
@@ -162,7 +162,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: subscription-validation
-      version: v0
+      version: v1
       params:
         subscriptionKeyHeader: Subscription-Key
         subscriptionKeyCookie: sub-key

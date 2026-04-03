@@ -155,7 +155,7 @@ spec:
         methods: [POST]
   policies:
     - name: llm-cost-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -164,7 +164,7 @@ spec:
               - amount: 50
                 duration: "24h"
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -179,7 +179,7 @@ Apply both a short-term burst limit and a long-term daily budget:
 ```yaml
   policies:
     - name: llm-cost-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -190,7 +190,7 @@ Apply both a short-term burst limit and a long-term daily budget:
               - amount: 50
                 duration: "24h"
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -205,7 +205,7 @@ Apply long-horizon budget controls suitable for subscription-style APIs:
 ```yaml
   policies:
     - name: llm-cost-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -216,7 +216,7 @@ Apply long-horizon budget controls suitable for subscription-style APIs:
               - amount: 100
                 duration: "720h"
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -231,7 +231,7 @@ Apply different spending limits to different endpoints within the same provider:
 ```yaml
   policies:
     - name: llm-cost-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -246,7 +246,7 @@ Apply different spending limits to different endpoints within the same provider:
               - amount: 5
                 duration: "24h"
     - name: llm-cost
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
