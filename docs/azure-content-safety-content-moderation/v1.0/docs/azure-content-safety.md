@@ -126,7 +126,7 @@ spec:
         methods: [POST]
   policies:
     - name: azure-content-safety-content-moderation
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -238,7 +238,7 @@ Configure strict moderation thresholds:
 ```yaml
 policies:
   - name: azure-content-safety-content-moderation
-    version: v0
+    version: v1
     paths:
       - path: /chat/completions
         methods: [POST]
@@ -267,7 +267,7 @@ Monitor only specific categories:
 ```yaml
 policies:
   - name: azure-content-safety-content-moderation
-    version: v0
+    version: v1
     paths:
       - path: /chat/completions
         methods: [POST]
@@ -287,7 +287,7 @@ Allow more content with higher thresholds:
 ```yaml
 policies:
   - name: azure-content-safety-content-moderation
-    version: v0
+    version: v1
     paths:
       - path: /chat/completions
         methods: [POST]

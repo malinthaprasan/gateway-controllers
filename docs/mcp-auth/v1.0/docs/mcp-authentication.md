@@ -149,7 +149,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
@@ -175,7 +175,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
@@ -212,7 +212,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
@@ -241,7 +241,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
@@ -271,7 +271,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP

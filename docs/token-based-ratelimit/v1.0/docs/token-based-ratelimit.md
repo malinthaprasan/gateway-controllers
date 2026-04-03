@@ -190,7 +190,7 @@ spec:
         methods: [POST]
   policies:
     - name: token-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -229,7 +229,7 @@ spec:
         methods: [POST]
   policies:
     - name: token-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -271,7 +271,7 @@ spec:
         methods: [POST]
   policies:
     - name: token-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -312,7 +312,7 @@ spec:
         methods: [POST]
   policies:
     - name: token-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -365,7 +365,7 @@ spec:
         methods: [POST]
   policies:
     - name: token-based-ratelimit
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

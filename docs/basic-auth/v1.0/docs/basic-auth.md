@@ -62,7 +62,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: basic-auth
-      version: v0
+      version: v1
       params:
         username: "admin"
         password: "secure-password-123"
@@ -93,7 +93,7 @@ spec:
       url: http://customer-service:8080
   policies:
     - name: basic-auth
-      version: v0
+      version: v1
       params:
         username: "customer_user"
         password: "customer_password"
@@ -125,7 +125,7 @@ spec:
       url: http://backend-service:8080
   policies:
     - name: basic-auth
-      version: v0
+      version: v1
       params:
         username: "service_user"
         password: "service_password"

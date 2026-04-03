@@ -77,12 +77,12 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
     - name: mcp-authz
-      version: v0
+      version: v1
       params:
         tools:
           - name: list_files
@@ -132,12 +132,12 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
     - name: mcp-authz
-      version: v0
+      version: v1
       params:
         resources:
           - name: "file:///private/main"
@@ -184,12 +184,12 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
     - name: mcp-authz
-      version: v0
+      version: v1
       params:
         prompts:
           - name: "admin_summary"
@@ -222,12 +222,12 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
     - name: mcp-authz
-      version: v0
+      version: v1
       params:
         methods:
           - name: "tools/call"
@@ -263,14 +263,14 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-auth
-      version: v0
+      version: v1
       params:
         issuers:
           - PrimaryIDP
         requiredScopes:
           - mcp:access
     - name: mcp-authz
-      version: v0
+      version: v1
       params:
         # Restrictive tool access
         tools:

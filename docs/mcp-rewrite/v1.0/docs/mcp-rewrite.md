@@ -96,7 +96,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-rewrite
-      version: v0
+      version: v1
       params:
         tools:
           - name: list-files
@@ -128,7 +128,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-rewrite
-      version: v0
+      version: v1
       params:
         resources:
           - name: user-docs
@@ -160,7 +160,7 @@ spec:
     url: https://mcp-backend:8080
   policies:
     - name: mcp-rewrite
-      version: v0
+      version: v1
       params:
         tools:
           - name: create-document

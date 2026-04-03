@@ -94,7 +94,7 @@ spec:
         methods: [GET]
   policies:
     - name: pii-masking-regex
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]
@@ -145,7 +145,7 @@ When using masking mode with a streaming LLM endpoint, PII placeholders sent to 
 ```yaml
   policies:
     - name: pii-masking-regex
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

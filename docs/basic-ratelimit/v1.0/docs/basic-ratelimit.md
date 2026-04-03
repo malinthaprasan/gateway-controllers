@@ -106,7 +106,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: basic-ratelimit
-          version: v0
+          version: v1
           params:
             limits:
               - requests: 1000
@@ -136,7 +136,7 @@ spec:
       path: /active
       policies:
         - name: basic-ratelimit
-          version: v0
+          version: v1
           params:
             limits:
               - requests: 10

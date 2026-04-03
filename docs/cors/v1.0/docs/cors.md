@@ -68,7 +68,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: cors
-      version: v0
+      version: v1
       params:
         allowedOrigins:
           - "*"
@@ -105,7 +105,7 @@ spec:
       url: http://sample-backend:5000/api
   policies:
     - name: cors
-      version: v0
+      version: v1
       params:
         allowedOrigins:
           - "https://app.example.com"
@@ -156,7 +156,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: cors
-      version: v0
+      version: v1
       params:
         allowedOrigins:
           - "https://.*\.example\.com"  # Matches any subdomain of example.com
@@ -198,7 +198,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: cors
-      version: v0
+      version: v1
       params:
         allowedOrigins:
           - "https://example.com"
@@ -244,7 +244,7 @@ spec:
       url: http://sample-backend:5000
   policies:
     - name: cors
-      version: v0
+      version: v1
       params:
         allowedOrigins:
           - "https://app.example.com"

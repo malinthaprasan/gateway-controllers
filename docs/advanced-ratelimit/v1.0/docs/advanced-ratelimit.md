@@ -273,7 +273,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: advanced-ratelimit
-          version: v0
+          version: v1
           params:
             quotas:
               - limits:
@@ -304,7 +304,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: advanced-ratelimit
-          version: v0
+          version: v1
           params:
             quotas:
               - limits:
@@ -337,7 +337,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: advanced-ratelimit
-          version: v0
+          version: v1
           params:
             quotas:
               - limits:
@@ -366,7 +366,7 @@ spec:
       url: https://public-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:
@@ -397,7 +397,7 @@ spec:
       url: https://tenant-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:
@@ -430,7 +430,7 @@ spec:
       url: https://analytics-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - name: per-user
@@ -469,7 +469,7 @@ spec:
       url: https://burst-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:
@@ -499,7 +499,7 @@ spec:
       url: https://backend-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:
@@ -530,7 +530,7 @@ spec:
       url: https://llm-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:
@@ -570,7 +570,7 @@ spec:
       url: https://compute-service:8080
   policies:
     - name: advanced-ratelimit
-      version: v0
+      version: v1
       params:
         quotas:
           - limits:

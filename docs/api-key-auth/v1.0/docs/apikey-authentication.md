@@ -71,7 +71,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: api-key-auth
-      version: v0
+      version: v1
       params:
         key: X-API-Key
         in: header
@@ -102,7 +102,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: api-key-auth
-      version: v0
+      version: v1
       params:
         key: API-Key
         in: header
@@ -133,7 +133,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: api-key-auth
-      version: v0
+      version: v1
       params:
         key: api_key
         in: query
@@ -164,7 +164,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: api-key-auth
-      version: v0
+      version: v1
       params:
         key: X-Custom-Auth
         in: header
@@ -195,7 +195,7 @@ spec:
       url: http://sample-backend:5000/api/v2
   policies:
     - name: api-key-auth
-      version: v0
+      version: v1
       params:
         key: X-Custom-Auth
         in: header
@@ -204,7 +204,7 @@ spec:
       path: /{country_code}/{city}
       policies:
         - name: api-key-auth
-          version: v0
+          version: v1
           params:
             key: X-API-Key
             in: header
@@ -212,7 +212,7 @@ spec:
       path: /alerts/active
       policies:
         - name: api-key-auth
-          version: v0
+          version: v1
           params:
             key: Authorization
             in: header

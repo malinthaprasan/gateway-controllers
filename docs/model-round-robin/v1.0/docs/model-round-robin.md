@@ -87,7 +87,7 @@ spec:
         methods: [POST]
   policies:
     - name: model-round-robin
-      version: v0
+      version: v1
       paths:
         - path: /chat/completions
           methods: [POST]

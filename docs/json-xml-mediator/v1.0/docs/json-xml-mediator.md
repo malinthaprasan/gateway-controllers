@@ -63,7 +63,7 @@ spec:
       url: http://xml-backend:8080
   policies:
     - name: json-xml-mediator
-      version: v0
+      version: v1
       params:
         downsteamPayloadFormat: json
         upstreamPayloadFormat: xml
@@ -162,7 +162,7 @@ spec:
       url: http://rest-service:8080
   policies:
     - name: json-xml-mediator
-      version: v0
+      version: v1
       params:
         downsteamPayloadFormat: xml
         upstreamPayloadFormat: json
@@ -225,7 +225,7 @@ spec:
       path: /xml-endpoint
       policies:
         - name: json-xml-mediator
-          version: v0
+          version: v1
           params:
             downsteamPayloadFormat: json
             upstreamPayloadFormat: xml
@@ -233,7 +233,7 @@ spec:
       path: /json-endpoint
       policies:
         - name: json-xml-mediator
-          version: v0
+          version: v1
           params:
             downsteamPayloadFormat: xml
             upstreamPayloadFormat: json
