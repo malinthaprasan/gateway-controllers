@@ -18,6 +18,9 @@
 # --------------------------------------------------------------------
 """Generate docs/README.md policy catalog table from docs/<policy>/<version>/metadata.json.
 
+The table is injected into scripts/README.md.template between the
+<!-- POLICY_TABLE_START --> and <!-- POLICY_TABLE_END --> markers.
+
 Usage:
   generate-policy-catalog.py           # write docs/README.md
   generate-policy-catalog.py --validate # exit 1 if docs/README.md is out of date
@@ -29,7 +32,11 @@ import sys
 from pathlib import Path
 
 DOCS_DIR = Path(__file__).parent.parent / "docs"
+TEMPLATE = Path(__file__).parent / "README.md.template"
 OUTPUT = DOCS_DIR / "README.md"
+
+TABLE_START = "<!-- POLICY_TABLE_START -->"
+TABLE_END = "<!-- POLICY_TABLE_END -->"
 
 
 def latest_version(policy, versions):
@@ -50,7 +57,7 @@ def first_sentence(text):
     return m.group(1) if m else flat.split(".")[0].strip() + "."
 
 
-def build_catalog():
+def build_table_rows():
     policies = []
 
     for entry in sorted(DOCS_DIR.iterdir()):
@@ -87,10 +94,6 @@ def build_catalog():
     policies.sort(key=lambda p: p["name"].lower())
 
     lines = [
-        "# Policy Catalog",
-        "",
-        "All available policies in the Gateway Controllers Policy Hub, sorted alphabetically.",
-        "",
         "| Policy | Categories | Description |",
         "|--------|------------|-------------|",
     ]
@@ -100,8 +103,29 @@ def build_catalog():
         cats = ", ".join(p["categories"])
         lines.append(f"| {name_cell} | {cats} | {p['description']} |")
 
-    lines.append("")
     return "\n".join(lines)
+
+
+def build_catalog():
+    if not TEMPLATE.exists():
+        print(f"error: template not found: {TEMPLATE}", file=sys.stderr)
+        sys.exit(1)
+
+    template = TEMPLATE.read_text()
+
+    if TABLE_START not in template or TABLE_END not in template:
+        print(f"error: {TEMPLATE} must contain '{TABLE_START}' and '{TABLE_END}' markers", file=sys.stderr)
+        sys.exit(1)
+
+    table = build_table_rows()
+    replacement = f"{TABLE_START}\n{table}\n{TABLE_END}"
+    content = re.sub(
+        re.escape(TABLE_START) + r".*?" + re.escape(TABLE_END),
+        replacement,
+        template,
+        flags=re.DOTALL,
+    )
+    return content
 
 
 def main():

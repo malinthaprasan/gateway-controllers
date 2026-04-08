@@ -1,7 +1,26 @@
 # Policy Catalog
 
-All available policies in the Gateway Controllers Policy Hub, sorted alphabetically.
+Centralized repository to store, version, and manage reusable gateway policies for the WSO2 API Platform.
 
+## What is a Policy?
+
+A policy is a pluggable unit of behavior that runs in the gateway request or response pipeline. Policies can be applied at the API level (all operations) or at individual operation level, and can run on requests, responses, or both.
+
+Policies handle cross-cutting concerns such as authentication, rate limiting, header manipulation, payload transformation, content moderation, and LLM-specific controls (prompt decoration, semantic caching, token limits, guardrails). Multiple policies can be chained together on the same API or operation.
+
+Each policy in this repository is versioned independently. When a new version is published, older versions remain available so existing deployments are not affected.
+
+## Creating Custom Policies
+
+The `ap` CLI lets you build a custom gateway image that includes any combination of hub policies (from this repository) and local policies (your own implementations).
+
+See [Customizing Gateway Policies](https://github.com/wso2/api-platform/blob/main/docs/cli/customizing-gateway-policies.md) in the API Platform documentation for full instructions.
+
+## Available Policies
+
+All available policies, sorted alphabetically.
+
+<!-- POLICY_TABLE_START -->
 | Policy | Categories | Description |
 |--------|------------|-------------|
 | [Analytics Header Filter](./analytics-header-filter/v1.0/docs/analytics-header-filter.md) | Logging, Analytics & Monitoring | The Analytics Header Filter policy allows you to control which request and response headers are included in analytics data using allow or deny modes. |
@@ -43,3 +62,4 @@ All available policies in the Gateway Controllers Policy Hub, sorted alphabetica
 | [Token Based Ratelimit](./token-based-ratelimit/v1.0/docs/token-based-ratelimit.md) | AI | A specialized rate limiting policy for LLM APIs that enforces usage quotas based on token counts. |
 | [URL Guardrail](./url-guardrail/v1.0/docs/url.md) | Guardrails, AI | Validates URLs found in request or response body content. |
 | [Word Count Guardrail](./word-count-guardrail/v1.0/docs/word-count.md) | Guardrails, AI | Validates the word count of request or response body content. |
+<!-- POLICY_TABLE_END -->
